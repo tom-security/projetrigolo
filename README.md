@@ -68,6 +68,57 @@ Rien n'est donné au départ. Au lancement, on ne sait que **bouger**.
 
 ---
 
+## Pilote automatique
+
+Une option du menu, **en mode bullet-hell uniquement**, lance une partie jouée
+par un bot. Il expose la même interface que le clavier (`axis` / `held` /
+`tapped`), donc le joueur ne sait pas qu'il est piloté et toute la logique de
+déplacement reste commune.
+
+À chaque décision (60 fois par seconde) il échantillonne 24 directions plus
+l'immobilité, simule sa position à quatre horizons (0,10 / 0,26 / 0,46 /
+0,72 s) et estime la distance au danger le plus proche **à ce moment-là** —
+pas maintenant. Chaque type de menace a sa propre extrapolation : trajectoire
+des projectiles, rotation des lasers, avance des murs et dérive de leur
+brèche, convergence des traqueuses, et pour les explosions la fenêtre complète
+du télégraphe à la fin de la persistance.
+
+Le score est **continu** : sous la marge de sécurité la pénalité croît au
+carré. C'est essentiel — avec une sentinelle « condamné » à valeur fixe, toutes
+les options mauvaises devenaient équivalentes et le bot en choisissait une au
+hasard au lieu de la moins pire.
+
+Il respecte aussi le défi en cours : il ne dashe pas pendant « sans dash »,
+reste au centre pendant « rester au centre », et va chercher le frôlement
+pendant le défi de frôlement.
+
+**Une partie du bot n'enregistre aucun record** — ce serait le score de la
+machine, pas le tien.
+
+> Indisponible en mode LoL, et l'option y disparaît au lieu d'exister sans
+> rien faire : là-bas on ne se déplace pas par direction mais par ordre de
+> clic, et la visée ennemie réagit à cet ordre. Piloter ça demanderait un tout
+> autre bot.
+
+## Mobile
+
+Le jeu est jouable au doigt dans les deux modes.
+
+- **Déplacement** — joystick relatif : poser le doigt n'importe où sur l'aire
+  de jeu et glisser. Un repère visuel apparaît sous le doigt. En mode LoL,
+  un appui vaut un clic droit.
+- **Sorts** — des boutons ronds en bas à droite, propres à chaque mode. Un
+  sort pas encore débloqué reste visible mais grisé : on voit ce qui arrive.
+- **Pause** — bouton dédié en haut à droite.
+- **Zoom adaptatif** — l'arène est plus grande que l'écran d'un téléphone. Le
+  mode bullet-hell dézoome juste ce qu'il faut pour qu'elle tienne
+  entièrement : esquiver ce qu'on ne voit pas n'a aucun sens. Sur grand écran
+  le zoom reste à 1 et le jeu garde exactement son échelle d'origine.
+- **HUD repliable** — sous 820 px de large ou 520 px de haut, le chrono
+  rétrécit, les colonnes latérales disparaissent et les objets remontent sous
+  l'en-tête. La colonne droite s'efface aussi dès que les boutons tactiles
+  occupent ce coin.
+
 ## Contrôles
 
 | Touche | Action | Disponibilité |

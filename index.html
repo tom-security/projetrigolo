@@ -2,7 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#07080f" />
 <title>DODGE TRAINER</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -31,6 +35,15 @@
           <button class="toggle" data-opt="endless" data-val="true">Carte infinie <em>(procédurale)</em></button>
         </div>
         <p class="hint" id="terrain-hint"></p>
+      </div>
+
+      <div id="bot-row">
+        <h2 class="section-label">Pilote automatique</h2>
+        <div class="toggle-row">
+          <button class="toggle" data-opt="bot" data-val="false">Je joue</button>
+          <button class="toggle" data-opt="bot" data-val="true">Le bot joue <em>(démonstration)</em></button>
+        </div>
+        <p class="hint" id="bot-hint"></p>
       </div>
 
       <div class="toggle-row small">
@@ -69,11 +82,19 @@
       <button id="menu-btn" class="ghost">MENU</button>
     </div>
   </div>
+
+  <!-- ============ COMMANDES TACTILES (mobile) ============ -->
+  <div id="touch-ui" class="hidden">
+    <button id="touch-pause" class="tbtn tbtn-pause" aria-label="Pause">| |</button>
+    <div id="touch-stick" class="tstick"><div class="tstick-knob"></div></div>
+    <div id="touch-actions"></div>
+  </div>
 </div>
 
 <script src="js/util.js"></script>
 <script src="js/config.js"></script>
 <script src="js/input.js"></script>
+<script src="js/bot.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/arena.js"></script>
 <script src="js/entities.js"></script>
@@ -94,6 +115,7 @@
 <script src="js/lol/player.js"></script>
 <script src="js/lol/hud.js"></script>
 <script src="js/lol/game.js"></script>
+<script src="js/touch.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

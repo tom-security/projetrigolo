@@ -2,9 +2,13 @@
 <html lang="fr">
 <head>
 <!-- DODGE TRAINER — fichier autonome, généré le 2026-09-22 par build.js.
-     25 fichiers sources inlinés. Ne pas éditer : modifier les sources puis relancer `node build.js`. -->
+     27 fichiers sources inlinés. Ne pas éditer : modifier les sources puis relancer `node build.js`. -->
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#07080f" />
 <title>DODGE TRAINER</title>
 <style>
 :root{
@@ -190,6 +194,121 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;
   font-weight:700;color:var(--dim);margin-bottom:10px;
 }
+
+/* ==========================================================================
+   Commandes tactiles (mobile)
+   ========================================================================== */
+#touch-ui{
+  position:fixed;inset:0;z-index:5;
+  pointer-events:none;                /* seuls les boutons captent les appuis */
+}
+#touch-ui.hidden{display:none}
+
+/* --- Joystick : purement visuel, le canvas gère le doigt ------------------ */
+.tstick{
+  position:absolute;width:116px;height:116px;
+  margin:-58px 0 0 -58px;
+  border-radius:50%;
+  border:2px solid rgba(77,227,255,.28);
+  background:rgba(8,12,26,.30);
+  opacity:0;transition:opacity .12s;
+  pointer-events:none;
+}
+.tstick.on{opacity:1}
+.tstick-knob{
+  position:absolute;left:50%;top:50%;
+  width:46px;height:46px;margin:-23px 0 0 -23px;
+  border-radius:50%;
+  background:rgba(77,227,255,.35);
+  border:2px solid rgba(77,227,255,.7);
+}
+
+/* --- Boutons d'action ----------------------------------------------------- */
+#touch-actions{
+  position:absolute;
+  right:calc(16px + env(safe-area-inset-right,0px));
+  bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column-reverse;gap:10px;
+  pointer-events:none;
+}
+.tbtn{
+  pointer-events:auto;
+  width:62px;height:62px;border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;
+  background:rgba(12,18,38,.72);
+  border:2px solid rgba(77,227,255,.45);
+  color:var(--ink);font:inherit;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:none;user-select:none;
+  transition:transform .08s,background .12s,opacity .12s;
+}
+.tbtn .tlab{font-size:11px;font-weight:800;letter-spacing:.04em;line-height:1}
+.tbtn .tkey{font-size:8.5px;opacity:.5;letter-spacing:.08em}
+.tbtn.down{transform:scale(.92);background:rgba(77,227,255,.28)}
+/* Un sort pas encore débloqué reste visible mais inerte : on voit ce qui
+   arrivera sans pouvoir s'en servir. */
+.tbtn.locked{opacity:.3;border-color:rgba(255,255,255,.18);pointer-events:none}
+
+.tbtn-pause{
+  position:absolute;
+  top:calc(12px + env(safe-area-inset-top,0px));
+  right:calc(16px + env(safe-area-inset-right,0px));
+  width:46px;height:46px;
+  font-size:13px;font-weight:800;letter-spacing:.14em;
+  border-color:rgba(255,255,255,.22);
+}
+
+/* ==========================================================================
+   Confort mobile
+   ========================================================================== */
+html,body{
+  overscroll-behavior:none;           /* pas de « tirer pour rafraîchir » */
+  -webkit-tap-highlight-color:transparent;
+}
+.overlay{overscroll-behavior:contain}
+button{-webkit-tap-highlight-color:transparent}
+
+/* Le pouce doit atteindre les cibles : on élargit les zones tactiles et on
+   aère les panneaux sur petit écran. */
+@media (max-width:620px){
+  .overlay{padding:14px}
+  .panel{padding:18px 14px;border-radius:14px}
+  .title{font-size:clamp(30px,10vw,44px)}
+  .diff-grid{grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px}
+  .mode-grid{grid-template-columns:1fr;gap:8px}
+  .diff-card{padding:11px 10px}
+  .diff-details ul{grid-template-columns:1fr}
+  .toggle{min-width:0;padding:13px 10px;font-size:12.5px}
+  .toggle-row{gap:6px}
+  .primary{padding:17px;font-size:15px}
+  .ghost{padding:14px}
+  .stats{grid-template-columns:1fr}
+  .section-label{margin:14px 0 8px}
+}
+
+/* Paysage très bas de plafond (téléphone couché) : on comprime la hauteur. */
+@media (max-height:460px) and (orientation:landscape){
+  .overlay{padding:10px}
+  .panel{padding:14px 16px}
+  .title{font-size:clamp(22px,5vh,32px)}
+  .tagline{margin:6px 0 12px;font-size:12px}
+  .section-label{margin:10px 0 6px}
+  .diff-card .dsub{display:none}
+  .controls{display:none}
+  #touch-actions{flex-direction:row-reverse;bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  .tbtn{width:54px;height:54px}
+}
+
+/* « DODGETRAINER » est un seul mot insécable : sur un écran étroit il
+   débordait de 14 px. En faisant du second morceau une boîte inline-block,
+   il peut passer à la ligne au lieu de sortir du cadre — et sur grand écran,
+   où la place ne manque pas, le rendu ne bouge pas. */
+.title{overflow-wrap:anywhere}
+.title span{display:inline-block}
+@media (max-width:420px){
+  .title{font-size:clamp(28px,8.6vw,44px);letter-spacing:.03em}
+}
 </style>
 </head>
 <body>
@@ -217,6 +336,15 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
           <button class="toggle" data-opt="endless" data-val="true">Carte infinie <em>(procédurale)</em></button>
         </div>
         <p class="hint" id="terrain-hint"></p>
+      </div>
+
+      <div id="bot-row">
+        <h2 class="section-label">Pilote automatique</h2>
+        <div class="toggle-row">
+          <button class="toggle" data-opt="bot" data-val="false">Je joue</button>
+          <button class="toggle" data-opt="bot" data-val="true">Le bot joue <em>(démonstration)</em></button>
+        </div>
+        <p class="hint" id="bot-hint"></p>
       </div>
 
       <div class="toggle-row small">
@@ -254,6 +382,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
       <button id="retry-btn" class="primary">RELANCER <em>(R)</em></button>
       <button id="menu-btn" class="ghost">MENU</button>
     </div>
+  </div>
+
+  <!-- ============ COMMANDES TACTILES (mobile) ============ -->
+  <div id="touch-ui" class="hidden">
+    <button id="touch-pause" class="tbtn tbtn-pause" aria-label="Pause">| |</button>
+    <div id="touch-stick" class="tstick"><div class="tstick-knob"></div></div>
+    <div id="touch-actions"></div>
   </div>
 </div>
 
@@ -716,19 +851,29 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     retry: ['KeyR']
   };
 
+  // Appuis venant des boutons tactiles : même vocabulaire que les touches,
+  // pour que le reste du jeu n'ait pas à savoir d'où vient la commande.
+  const vDown = Object.create(null);
+  const vPressed = Object.create(null);
+
   function held(action) {
+    if (vDown[action]) return true;
     const codes = MAP[action];
     for (let i = 0; i < codes.length; i++) if (down[codes[i]]) return true;
     return false;
   }
 
   function tapped(action) {
+    if (vPressed[action]) { vPressed[action] = false; return true; }
     const codes = MAP[action];
     for (let i = 0; i < codes.length; i++) {
       if (pressed[codes[i]]) { pressed[codes[i]] = false; return true; }
     }
     return false;
   }
+
+  function vPress(action) { vDown[action] = true; vPressed[action] = true; }
+  function vRelease(action) { vDown[action] = false; }
 
   /** Vecteur de déplacement normalisé (clavier, ou joystick tactile). */
   function axis() {
@@ -744,10 +889,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   }
 
   const touch = { active: false, dx: 0, dy: 0, id: null, ox: 0, oy: 0 };
+  const STICK_R = 58;            // rayon utile du joystick, en pixels écran
 
   function clearAll() {
     for (const k in down) down[k] = false;
     for (const k in pressed) pressed[k] = false;
+    for (const k in vDown) vDown[k] = false;
+    for (const k in vPressed) vPressed[k] = false;
     touch.active = false; touch.dx = 0; touch.dy = 0; touch.id = null;
   }
 
@@ -763,7 +911,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     window.addEventListener('blur', clearAll);
 
     // --- Tactile : joystick virtuel relatif au point de contact ----------
+    // Les deux modes écoutent le même canvas ; `enabled` évite qu'un appui
+    // destiné au mode LoL pilote aussi le joystick du mode classique.
     canvas.addEventListener('touchstart', e => {
+      if (!api.enabled) return;
       const t = e.changedTouches[0];
       touch.id = t.identifier; touch.ox = t.clientX; touch.oy = t.clientY;
       touch.active = true; touch.dx = 0; touch.dy = 0;
@@ -771,11 +922,12 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     }, { passive: false });
 
     canvas.addEventListener('touchmove', e => {
+      if (!api.enabled) return;
       for (const t of e.changedTouches) {
         if (t.identifier !== touch.id) continue;
         const dx = t.clientX - touch.ox, dy = t.clientY - touch.oy;
         const l = Math.hypot(dx, dy) || 1;
-        const s = Math.min(l, 52) / 52;
+        const s = Math.min(l, STICK_R) / STICK_R;
         touch.dx = dx / l * s; touch.dy = dy / l * s;
       }
       e.preventDefault();
@@ -790,7 +942,258 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     canvas.addEventListener('touchcancel', end);
   }
 
-  root.Input = { attach, held, tapped, axis, clearAll };
+  const api = {
+    attach, held, tapped, axis, clearAll,
+    vPress, vRelease,
+    enabled: true,
+    stickRadius: STICK_R,
+    /** État du joystick, pour que l'affichage tactile puisse le dessiner. */
+    touchState: () => touch
+  };
+  root.Input = api;
+})(window);
+</script>
+<script>
+/* ==== js/bot.js ==== */
+/* ==========================================================================
+   bot.js — pilote automatique du mode BULLET-HELL
+   --------------------------------------------------------------------------
+   Il expose exactement la même interface que `Input` (axis / held / tapped),
+   donc le joueur ne sait pas qu'il est piloté : game.js lui passe le bot à la
+   place du clavier, et rien d'autre ne change.
+
+   Méthode : à chaque décision on échantillonne des directions, on simule la
+   position du joueur à plusieurs horizons, et on estime la distance au danger
+   le plus proche À CE MOMENT-LÀ — pas maintenant. Esquiver un projectile
+   demande de savoir où il sera, pas où il est.
+
+   Ce bot ne fonctionne PAS en mode LoL : là-bas on ne se déplace pas par
+   direction mais par ordre de clic, et la visée ennemie réagit à cet ordre.
+   C'est une autre mécanique, qui demanderait un autre pilote.
+   ========================================================================== */
+(function (root) {
+  'use strict';
+  const U = root.U, CFG = root.CFG;
+
+  const DIRS = 24;                  // directions testées
+  const HORIZONS = [0.10, 0.26, 0.46, 0.72];
+  const DECIDE_HZ = 60;             // fréquence de décision (le jeu tourne à 120)
+  const SCAN_RADIUS = 520;          // au-delà, un danger ne concerne pas la frame
+  const SAFE = 26;                  // marge visée au-delà du hitbox, en pixels
+
+  const bot = {
+    enabled: false,
+    ax: 0, ay: 0,
+    wantDash: false,
+    wantAdren: false,
+    wantFocus: false,
+    acc: 0,
+    danger: 0,                      // 0..1, sert au HUD
+    // Marge sous laquelle le bot dashe. Valeur choisie par comparaison sur
+    // 5 runs par réglage : dasher tôt bat largement dasher acculé
+    // (hard : 8,6 s → 15,1 s de survie moyenne). Réglable à chaud.
+    dashAt: SAFE * 0.85,
+    near: [],
+    reset() {
+      this.ax = this.ay = 0;
+      this.wantDash = this.wantAdren = this.wantFocus = false;
+      this.acc = 0; this.danger = 0; this.near.length = 0;
+    }
+  };
+
+  /* --- Interface identique à celle du clavier ---------------------------- */
+  bot.axis = function () { return { x: this.ax, y: this.ay }; };
+  bot.held = function (a) { return a === 'focus' ? this.wantFocus : false; };
+  bot.tapped = function (a) {
+    if (a === 'dash' && this.wantDash) { this.wantDash = false; return true; }
+    if (a === 'adren' && this.wantAdren) { this.wantAdren = false; return true; }
+    return false;
+  };
+
+  /* ======================================================================
+     Distance au danger `hz` depuis (x, y), tel qu'il sera dans `t` secondes.
+     Renvoie une distance à la surface ; négatif = touché.
+     ====================================================================== */
+  function clearance(hz, x, y, t, game) {
+    const E = root.Ent;
+
+    // --- Projectile : extrapolation linéaire -----------------------------
+    if (hz instanceof E.Bullet) {
+      if (hz.delay > t) return 1e6;                 // pas encore apparu
+      const bx = hz.x + hz.vx * t, by = hz.y + hz.vy * t;
+      // Une trajectoire courbe ou traquante s'écarte de la droite : on
+      // élargit le projectile plutôt que de simuler, c'est moins cher et
+      // ça penche du bon côté (prudence).
+      const drift = (Math.abs(hz.curve) + hz.homing) * t * 60;
+      return Math.hypot(x - bx, y - by) - hz.r - drift;
+    }
+
+    // --- Explosion : dangereuse du télégraphe à la fin de la persistance --
+    if (hz instanceof E.Blast) {
+      const d = Math.hypot(x - hz.x, y - hz.y) - hz.r;
+      if (hz.state === 'boom') return d;
+      // En télégraphe : létale un peu avant la détonation, pour avoir le
+      // temps d'en sortir plutôt que d'y être encore au moment du boum.
+      return (t >= hz.tele - 0.18) ? d : Math.max(d, 0.001);
+    }
+
+    // --- Laser : le faisceau tourne, on projette son angle ---------------
+    if (hz instanceof E.Laser) {
+      const a = hz.a + hz.spin * t;
+      if (hz.state === 'tele' && t < hz.tele - 0.12) return 1e6;
+      const ex = hz.x + Math.cos(a) * hz.len, ey = hz.y + Math.sin(a) * hz.len;
+      return U.distToSeg(x, y, hz.x, hz.y, ex, ey) - hz.w * 0.5;
+    }
+
+    // --- Mur : il avance, et sa brèche peut dériver ----------------------
+    if (hz instanceof E.Wall) {
+      if (hz.tele > t) return 1e6;
+      const px = hz.x + Math.cos(hz.a) * hz.speed * t;
+      const py = hz.y + Math.sin(hz.a) * hz.speed * t;
+      const tx = -Math.sin(hz.a), ty = Math.cos(hz.a);
+      const gap = hz.gap + hz.drift * t;
+      const a1x = px + tx * -hz.half, a1y = py + ty * -hz.half;
+      const b1x = px + tx * (gap - hz.gapHalf), b1y = py + ty * (gap - hz.gapHalf);
+      const a2x = px + tx * (gap + hz.gapHalf), a2y = py + ty * (gap + hz.gapHalf);
+      const b2x = px + tx * hz.half, b2y = py + ty * hz.half;
+      return Math.min(U.distToSeg(x, y, a1x, a1y, b1x, b1y),
+                      U.distToSeg(x, y, a2x, a2y, b2x, b2y)) - hz.thick * 0.5;
+    }
+
+    // --- Traqueuse : elle vient vers nous, on la fait avancer vers nous ---
+    if (hz instanceof E.Chaser) {
+      if (hz.tele > t) return 1e6;
+      const a = Math.atan2(y - hz.y, x - hz.x);     // au pire elle vise juste
+      const cx = hz.x + Math.cos(a) * hz.speed * t;
+      const cy = hz.y + Math.sin(a) * hz.speed * t;
+      return Math.hypot(x - cx, y - cy) - hz.r;
+    }
+
+    const d = hz.edge ? hz.edge(x, y) : 1e6;
+    return d < 0 ? 1e6 : d;                          // inconnu et inactif
+  }
+
+  /* ======================================================================
+     Décision
+     ====================================================================== */
+  bot.think = function (game, dt) {
+    this.acc += dt;
+    if (this.acc < 1 / DECIDE_HZ) return;
+    this.acc = 0;
+
+    const p = game.player, A = game.arena;
+    const hb = CFG.PLAYER.hitbox;
+    const speed = game.diff.playerSpeed * p.speedMul;
+
+    // --- On ne raisonne que sur ce qui peut nous atteindre --------------
+    const near = this.near;
+    near.length = 0;
+    const R2 = SCAN_RADIUS * SCAN_RADIUS;
+    for (let i = 0; i < game.hazards.length; i++) {
+      const hz = game.hazards[i];
+      const dx = (hz.x !== undefined ? hz.x : p.x) - p.x;
+      const dy = (hz.y !== undefined ? hz.y : p.y) - p.y;
+      // Lasers et murs sont longs : leur origine peut être loin sans qu'ils
+      // cessent de nous menacer. On ne les filtre pas sur la distance.
+      if (hz instanceof root.Ent.Laser || hz instanceof root.Ent.Wall ||
+          dx * dx + dy * dy < R2) near.push(hz);
+    }
+
+    // --- Contraintes venant du défi en cours ----------------------------
+    const ch = game.objectives && game.objectives.activeChallenge;
+    const noDash = !!(ch && ch.cond === 'nodash');
+    const keepInner = !!(ch && ch.cond === 'inner');
+    const wantGraze = !!(ch && ch.cond === 'graze');
+    const innerR = A.innerRadius ? A.innerRadius() : A.radius * 0.42;
+
+    let bestA = null, bestScore = -Infinity, bestClear = -1e6;
+    let stayScore = -Infinity, stayClear = -1e6;
+
+    for (let i = 0; i <= DIRS; i++) {
+      // i === DIRS teste l'immobilité : parfois c'est la bonne réponse.
+      const moving = i < DIRS;
+      const ang = moving ? (i / DIRS) * U.TAU : 0;
+      const cx = moving ? Math.cos(ang) : 0, cy = moving ? Math.sin(ang) : 0;
+
+      let score = 0, minClear = 1e6;
+
+      for (let h = 0; h < HORIZONS.length; h++) {
+        const t = HORIZONS[h];
+        const px = p.x + cx * speed * t;
+        const py = p.y + cy * speed * t;
+        const weight = 1.5 - h * 0.28;   // l'incertitude croît avec l'horizon
+
+        // Sortir de l'arène tue. Pénalité forte mais CONTINUE : quand tout
+        // est mauvais, il faut encore pouvoir classer les options.
+        const dc = Math.hypot(px - A.cx, py - A.cy);
+        const over = dc - (A.radius - hb - 18);
+        if (over > 0) score -= 4000 + over * 40;
+        // Légère préférence pour le centre : plus d'échappatoires ensuite.
+        score -= dc * 0.35;
+        if (keepInner) score -= Math.max(0, dc - innerR * 0.88) * 8;
+
+        let c = 1e6;
+        for (let k = 0; k < near.length; k++) {
+          const d = clearance(near[k], px, py, t, game);
+          if (d < c) c = d;
+        }
+        c -= hb;
+        if (c < minClear) minClear = c;
+
+        // Le cœur du classement. Sous la marge de sécurité, la pénalité
+        // croît au carré : frôler coûte un peu, se faire toucher coûte tout,
+        // et entre les deux l'ordre reste exploitable.
+        if (c < SAFE) {
+          const deficit = SAFE - c;
+          score -= deficit * deficit * 2.2 * weight;
+        }
+        score += Math.min(Math.max(c, 0), 240) * weight;
+      }
+
+      // Frôler charge l'adrénaline, mais c'est un mauvais échange hors du
+      // défi : mesuré, l'incitation permanente faisait chuter la survie en
+      // easy de 56 s à 30 s de moyenne pour un gain nul ailleurs. Le bot ne
+      // s'approche donc que lorsque l'objectif l'exige.
+      if (wantGraze && minClear > SAFE) {
+        score -= Math.abs(minClear - (SAFE + 16)) * 1.6;
+      }
+
+      if (!moving) { stayScore = score; stayClear = minClear; }
+      if (score > bestScore) { bestScore = score; bestA = ang; bestClear = minClear; }
+    }
+
+    // « Piégé » = même la meilleure option laisse passer sous la marge.
+    const trapped = bestClear < 4;
+
+    // --- Sortie de décision ---------------------------------------------
+    // L'immobilité ne gagne que si elle est au moins aussi sûre : à score
+    // égal, bouger garde l'initiative.
+    if (bestA === null || (stayScore >= bestScore && stayClear >= bestClear)) {
+      this.ax = this.ay = 0;
+    } else {
+      this.ax = Math.cos(bestA); this.ay = Math.sin(bestA);
+    }
+
+    this.danger = U.clamp(1 - bestClear / 160, 0, 1);
+
+    // --- Dash : l'invincibilité doit partir AVANT l'impact ---------------
+    // Attendre d'être acculé, c'est dasher une frame trop tard. On part dès
+    // que la meilleure trajectoire passe sous la marge de sécurité.
+    this.wantDash = !noDash && p.has('dash') && p.dashCharges > 0 &&
+                    bestClear < this.dashAt;
+    if (this.wantDash && bestA !== null) { this.ax = Math.cos(bestA); this.ay = Math.sin(bestA); }
+
+    // --- Adrénaline : ralentir le monde dès que ça se tend ---------------
+    // La jauge se recharge en frôlant : la garder pleine ne rapporte rien,
+    // la dépenser tôt évite la situation sans issue.
+    this.wantAdren = p.has('adrenalin') && p.adrenalin >= 1 &&
+                     p.slowT <= 0 && (trapped || this.danger > 0.45);
+
+    // --- Focus : uniquement pour frôler proprement -----------------------
+    this.wantFocus = wantGraze && p.has('focus') && !trapped && this.danger < 0.5;
+  };
+
+  root.Bot = bot;
 })(window);
 </script>
 <script>
@@ -2580,9 +2983,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 
   function draw(ctx, g, w, h) {
     const p = g.player, d = g.diff, o = g.objectives;
-    // Sous cette largeur, le HUD se replie : le chrono rétrécit, les colonnes
-    // latérales disparaissent et les objets remontent en haut à gauche.
-    const compact = w < 820;
+    // Le HUD se replie quand l'écran est étroit OU bas de plafond (téléphone
+    // couché) : le chrono rétrécit, les colonnes latérales disparaissent et
+    // les objets remontent sous l'en-tête.
+    const compact = w < 820 || h < 520;
+    // Les boutons tactiles occupent le coin bas-droit : la colonne de
+    // statistiques doit leur céder la place, quelle que soit la taille.
+    const touchUI = !!(root.Touch && root.Touch.isActive());
     ctx.save();
 
     /* ---- Chrono + difficulté (haut gauche) ---------------------------- */
@@ -2597,6 +3004,16 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     const ik = U.inv(1, d.intensityCap, g.director.I);
     bar(ctx, 22, 94, 168, 5, ik, d.color);
     label(ctx, 196, 99, 'INTENSITÉ ×' + g.director.I.toFixed(2), 10.5, 'rgba(200,210,240,.72)');
+
+    /* ---- Pilote automatique -------------------------------------------- */
+    if (g.botActive) {
+      const B = root.Bot;
+      label(ctx, 22, 118, compact ? 'PILOTE AUTO · hors record' : 'PILOTE AUTOMATIQUE · record désactivé',
+        10.5, '#4ade80');
+      // Jauge de menace : ce que le bot estime du danger immédiat.
+      bar(ctx, 22, 124, 120, 4, B ? B.danger : 0,
+        (B && B.danger > 0.72) ? '#ff3b30' : '#4ade80', 'rgba(74,222,128,.15)');
+    }
 
     /* ---- Record (haut droite) ------------------------------------------ */
     if (g.best > 0) {
@@ -2645,7 +3062,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     }
 
     /* ---- Pattern en cours (info d'apprentissage) ----------------------- */
-    if (!compact && g.lastPatternT > 0 && g.lastPattern) {
+    if (!compact && !touchUI && g.lastPatternT > 0 && g.lastPattern) {
       ctx.globalAlpha = U.clamp(g.lastPatternT / 0.6, 0, 1) * 0.75;
       label(ctx, w - 22, h - 20, g.lastPattern.toUpperCase(), 12, 'rgba(200,210,240,.9)', 'right');
       ctx.globalAlpha = 1;
@@ -2703,7 +3120,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     }
 
     /* ---- Statistiques discrètes (bas droite) --------------------------- */
-    if (!compact) {
+    if (!compact && !touchUI) {
       label(ctx, w - 22, h - 40, 'FRÔLEMENTS ' + g.stats.graze, 11, 'rgba(200,210,240,.5)', 'right');
     }
 
@@ -2836,6 +3253,17 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     this.h = this.canvas.clientHeight || root.innerHeight;
     this.canvas.width = Math.floor(this.w * this.dpr);
     this.canvas.height = Math.floor(this.h * this.dpr);
+    this.computeZoom();
+  };
+
+  /** L'arène doit tenir à l'écran. Sur un grand écran elle y tient déjà et le
+      zoom reste à 1 — le jeu garde exactement son échelle d'origine. Sur un
+      téléphone elle est plus large que l'écran : on dézoome juste ce qu'il
+      faut, parce qu'esquiver ce qu'on ne voit pas n'a aucun sens. */
+  Game.prototype.computeZoom = function () {
+    const r = (this.arena && this.arena.baseRadius) || (this.diff && this.diff.arenaRadius) || 400;
+    const needed = r * 2 + 40;
+    this.zoom = Math.min(1, Math.min(this.w, this.h) / needed);
   };
 
   /* --- Persistance -------------------------------------------------------- */
@@ -2857,8 +3285,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     this.endless = !!(opts && opts.endless);
     this.fx.quality = (opts && opts.quality) || 'high';
     this.fx.shakeEnabled = !(opts && opts.shake === false);
+    // Pilote automatique : réservé à ce mode. Une partie jouée par le bot
+    // n'enregistre aucun record, sinon elle écraserait ceux du joueur.
+    this.botActive = !!(opts && opts.bot) && !!root.Bot;
+    if (this.botActive) root.Bot.reset();
 
     this.arena.init(this.diff, this.endless, (Math.random() * 1e9) | 0);
+    this.computeZoom();            // le rayon d'arène dépend de la difficulté
     this.player.reset();
     this.fx.reset();
     this.hazards.length = 0;
@@ -2894,7 +3327,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     this.fx.ring(this.player.x, this.player.y, 40, 14, '#fff', 560);
     this.audio.death();
 
-    const record = this.elapsed > this.best;
+    // Un run du bot ne peut pas battre le record : ce serait le score de la
+    // machine, pas le tien.
+    const record = !this.botActive && this.elapsed > this.best;
     if (record) { this.best = this.elapsed; this.saveBest(this.elapsed); }
     this.newRecord = record;
 
@@ -2924,7 +3359,14 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
       }
     }
 
-    p.update(dt, root.Input);
+    // Le bot expose la même interface que le clavier : le joueur ne fait
+    // aucune différence, et toute la logique de déplacement reste commune.
+    if (this.botActive) {
+      root.Bot.think(this, dt);
+      p.update(dt, root.Bot);
+    } else {
+      p.update(dt, root.Input);
+    }
 
     const collapse = this.arena.update(dt, p, this.elapsed);
     if (collapse) { this.die('Effondrement de la zone — rester dehors tue.'); return; }
@@ -2973,14 +3415,17 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 
     if (this.state === 'menu') { this.drawIdleBackdrop(ctx, w, h); return; }
 
-    const camX = this.arena.camX + this.fx.shakeX;
-    const camY = this.arena.camY + this.fx.shakeY;
-    const ox = w / 2 - camX, oy = h / 2 - camY;
+    const z = this.zoom;
+    const camX = this.arena.camX + this.fx.shakeX / z;
+    const camY = this.arena.camY + this.fx.shakeY / z;
 
     ctx.save();
-    ctx.translate(ox, oy);
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(z, z);
+    ctx.translate(-camX, -camY);
 
-    const view = { x0: camX - w / 2 - 80, y0: camY - h / 2 - 80, x1: camX + w / 2 + 80, y1: camY + h / 2 + 80 };
+    const hw = (w / 2) / z + 80, hh = (h / 2) / z + 80;
+    const view = { x0: camX - hw, y0: camY - hh, x1: camX + hw, y1: camY + hh };
 
     this.arena.drawFloor(ctx, view);
     this.arena.drawBounds(ctx, view, this.elapsed);
@@ -3269,7 +3714,12 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   let holdMove = false;          // clic droit maintenu = ordre régénéré en continu
   let attached = false;
 
+  // Appuis venant des boutons tactiles, mêmes noms d'action que les touches.
+  const vDown = Object.create(null);
+  const vPressed = Object.create(null);
+
   function held(a) {
+    if (vDown[a]) return true;
     const c = MAP[a];
     if (!c) return false;
     for (let i = 0; i < c.length; i++) if (down[c[i]]) return true;
@@ -3277,6 +3727,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   }
 
   function tapped(a) {
+    if (vPressed[a]) { vPressed[a] = false; return true; }
     const c = MAP[a];
     if (!c) return false;
     for (let i = 0; i < c.length; i++) {
@@ -3284,6 +3735,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     }
     return false;
   }
+
+  function vPress(a) { vDown[a] = true; vPressed[a] = true; }
+  function vRelease(a) { vDown[a] = false; }
 
   /** Ordre de déplacement en attente, ou null. */
   function takeMoveOrder() {
@@ -3295,6 +3749,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   function clearAll() {
     for (const k in down) down[k] = false;
     for (const k in pressed) pressed[k] = false;
+    for (const k in vDown) vDown[k] = false;
+    for (const k in vPressed) vPressed[k] = false;
     moveOrder = null;
     holdMove = false;
   }
@@ -3335,7 +3791,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     root.addEventListener('mouseup', e => { if (e.button === 2) holdMove = false; });
 
     // Tactile : un appui vaut un clic droit.
+    // Les deux modes écoutent le même canvas ; `enabled` évite qu'un appui
+    // destiné au mode clavier crée ici un ordre de déplacement fantôme.
     canvas.addEventListener('touchstart', e => {
+      if (!api.enabled) return;
       const t = e.changedTouches[0], r = canvas.getBoundingClientRect();
       mouse.sx = t.clientX - r.left; mouse.sy = t.clientY - r.top; mouse.inside = true;
       moveOrder = { sx: mouse.sx, sy: mouse.sy };
@@ -3343,6 +3802,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
       e.preventDefault();
     }, { passive: false });
     canvas.addEventListener('touchmove', e => {
+      if (!api.enabled) return;
       const t = e.changedTouches[0], r = canvas.getBoundingClientRect();
       mouse.sx = t.clientX - r.left; mouse.sy = t.clientY - r.top;
       e.preventDefault();
@@ -3352,7 +3812,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     canvas.addEventListener('touchcancel', end);
   }
 
-  root.LolInput = { attach, held, tapped, takeMoveOrder, clearAll, mouse };
+  const api = {
+    attach, held, tapped, takeMoveOrder, clearAll, mouse,
+    vPress, vRelease, enabled: true
+  };
+  root.LolInput = api;
 })(window);
 </script>
 <script>
@@ -5059,9 +5523,12 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 
   function draw(ctx, g, w, h) {
     const p = g.player, d = g.diff, o = g.objectives;
-    // Sous cette largeur le HUD se replie : sinon le chrono percute le titre
-    // d'objectif centré et les deux colonnes basses se chevauchent.
-    const compact = w < 820;
+    // Le HUD se replie quand l'écran est étroit OU bas de plafond : sinon le
+    // chrono percute le titre d'objectif centré et les colonnes basses se
+    // chevauchent.
+    const compact = w < 820 || h < 520;
+    // Les boutons tactiles occupent le coin bas-droit.
+    const touchUI = !!(root.Touch && root.Touch.isActive());
     ctx.save();
 
     /* ---- Chrono, difficulté, intensité --------------------------------- */
@@ -5158,7 +5625,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     if (p.shieldUp && !compact) label(ctx, 22, h - 54, '◇ BOUCLIER DE SORTS PRÊT', 11, '#b4dcff');
 
     /* ---- Statistiques ----------------------------------------------------- */
-    if (!compact) {
+    if (!compact && !touchUI) {
       label(ctx, w - 22, h - 62, 'ESQUIVES DE JUSTESSE ' + g.stats.jukes, 11, 'rgba(200,210,240,.5)', 'right');
       label(ctx, w - 22, h - 46, 'CC SUBIS ' + g.stats.ccTaken + '  ·  BLOQUÉS PAR SBIRE ' + g.stats.blocked,
         11, 'rgba(200,210,240,.5)', 'right');
@@ -5514,6 +5981,155 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 })(window);
 </script>
 <script>
+/* ==== js/touch.js ==== */
+/* ==========================================================================
+   touch.js — commandes tactiles
+   --------------------------------------------------------------------------
+   Sur un écran tactile il manque deux choses : de quoi déclencher les sorts,
+   et un repère visuel pour le joystick. Les boutons sont des éléments DOM
+   posés par-dessus le canvas — ils captent donc leurs propres appuis, ce qui
+   laisse le canvas libre pour le déplacement et rend le multi-touch naturel
+   (on garde le pouce sur le stick pendant qu'on appuie de l'autre main).
+
+   Les boutons ne font que traduire un appui en nom d'action : le jeu ne sait
+   pas si la commande vient du clavier ou d'un doigt.
+   ========================================================================== */
+(function (root) {
+  'use strict';
+
+  // Chaque bouton : [action, libellé, touche équivalente, buff requis, maintenu]
+  const SETS = {
+    classic: [
+      ['dash',  'DASH',  'ESP',  'dash',      false],
+      ['focus', 'FOCUS', 'MAJ',  'focus',     true],
+      ['adren', 'ADRÉ',  'E',    'adrenalin', false]
+    ],
+    lol: [
+      ['flash',   'FLASH', 'F',   'flash',   false],
+      ['dash',    'RUÉE',  'ESP', 'dash',    false],
+      ['cleanse', 'PURGE', 'A',   'cleanse', false],
+      ['zhonya',  'STASE', 'E',   'zhonya',  false]
+    ]
+  };
+
+  const T = {
+    available: false,
+    mode: null,
+    el: null, stick: null, knob: null, actions: null,
+    buttons: [],
+    _sig: ''
+  };
+
+  /** Un pointeur grossier ou un écran tactile suffit à justifier les boutons. */
+  function detect() {
+    return ('ontouchstart' in window) ||
+           (navigator.maxTouchPoints > 0) ||
+           (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  }
+
+  function makeButton(spec, input) {
+    const [action, label, key, , holdable] = spec;
+    const b = document.createElement('button');
+    b.className = 'tbtn';
+    b.dataset.action = action;
+    b.innerHTML = '<span class="tlab">' + label + '</span><span class="tkey">' + key + '</span>';
+
+    const press = e => {
+      e.preventDefault(); e.stopPropagation();
+      if (b.classList.contains('locked')) return;
+      input().vPress(action);
+      b.classList.add('down');
+    };
+    const release = e => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (holdable) input().vRelease(action);
+      b.classList.remove('down');
+    };
+    // Un appui maintenu (focus) doit rester actif ; un appui simple se relâche
+    // tout de suite pour ne pas bloquer la touche virtuelle.
+    b.addEventListener('touchstart', e => { press(e); if (!holdable) input().vRelease(action); }, { passive: false });
+    b.addEventListener('touchend', release, { passive: false });
+    b.addEventListener('touchcancel', release, { passive: false });
+    b.addEventListener('mousedown', press);
+    b.addEventListener('mouseup', release);
+    b.addEventListener('mouseleave', release);
+    b.addEventListener('contextmenu', e => e.preventDefault());
+    return b;
+  }
+
+  T.init = function (onPause) {
+    T.available = detect();
+    T.el = document.getElementById('touch-ui');
+    T.stick = document.getElementById('touch-stick');
+    T.knob = T.stick ? T.stick.querySelector('.tstick-knob') : null;
+    T.actions = document.getElementById('touch-actions');
+    const pause = document.getElementById('touch-pause');
+    if (pause) {
+      pause.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); onPause(); }, { passive: false });
+      pause.addEventListener('click', e => { e.preventDefault(); onPause(); });
+    }
+    if (!T.available && T.el) T.el.classList.add('hidden');
+  };
+
+  /** Construit le jeu de boutons du mode donné (une seule fois par mode). */
+  T.setMode = function (mode) {
+    if (!T.available || !T.actions || T.mode === mode) return;
+    T.mode = mode;
+    T.actions.innerHTML = '';
+    T.buttons.length = 0;
+    const input = () => (mode === 'lol' ? root.LolInput : root.Input);
+    for (const spec of SETS[mode] || []) {
+      const b = makeButton(spec, input);
+      T.actions.appendChild(b);
+      T.buttons.push({ el: b, buff: spec[3] });
+    }
+    // Le stick n'a de sens qu'au clavier : en mode LoL on se déplace au clic.
+    if (T.stick) T.stick.style.display = mode === 'lol' ? 'none' : '';
+  };
+
+  T.show = function () { if (T.available && T.el) T.el.classList.remove('hidden'); };
+  T.hide = function () { if (T.el) T.el.classList.add('hidden'); };
+
+  /** Vrai quand les boutons occupent l'écran : le HUD doit leur laisser
+      le coin bas-droit, sinon ses statistiques passent dessous. */
+  T.isActive = function () {
+    return !!(T.available && T.el && !T.el.classList.contains('hidden'));
+  };
+
+  /** Grise les sorts pas encore débloqués et suit le joystick. */
+  T.sync = function (game) {
+    if (!T.available || !T.el || T.el.classList.contains('hidden')) return;
+
+    const p = game.player;
+    let sig = '';
+    for (const b of T.buttons) {
+      const has = !!(p && p.buffs && p.buffs[b.buff]);
+      sig += has ? '1' : '0';
+    }
+    if (sig !== T._sig) {                       // on ne touche au DOM que si ça change
+      T._sig = sig;
+      T.buttons.forEach((b, i) => b.el.classList.toggle('locked', sig[i] === '0'));
+    }
+
+    if (T.stick && T.mode !== 'lol') {
+      const st = root.Input.touchState();
+      if (st.active) {
+        const r = root.Input.stickRadius;
+        T.stick.style.display = '';
+        T.stick.style.left = st.ox + 'px';
+        T.stick.style.top = st.oy + 'px';
+        T.knob.style.transform = 'translate(' + (st.dx * r) + 'px,' + (st.dy * r) + 'px)';
+        T.stick.classList.add('on');
+      } else {
+        T.stick.classList.remove('on');
+      }
+    }
+  };
+
+  root.Touch = T;
+})(window);
+</script>
+<script>
 /* ==== js/main.js ==== */
 /* ==========================================================================
    main.js — menus, sélection du mode et de la difficulté, boucle principale
@@ -5544,6 +6160,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     pause: document.getElementById('pause'),
     dead: document.getElementById('dead'),
     modeList: document.getElementById('mode-list'),
+    botRow: document.getElementById('bot-row'),
+    botHint: document.getElementById('bot-hint'),
     list: document.getElementById('difficulty-list'),
     details: document.getElementById('diff-details'),
     terrainRow: document.getElementById('terrain-row'),
@@ -5596,7 +6214,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   /* --- Préférences persistées ----------------------------------------------- */
   const PREF_KEY = 'dodgetrainer.prefs';
   const prefs = Object.assign(
-    { mode: 'classic', diff: 'medium', lolDiff: 'medium', endless: false, quality: 'high', shake: true },
+    { mode: 'classic', diff: 'medium', lolDiff: 'medium', endless: false,
+      quality: 'high', shake: true, bot: false },
     (() => { try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch (e) { return {}; } })()
   );
   function savePrefs() {
@@ -5668,6 +6287,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     // Le terrain procédural n'existe que dans le mode classique.
     el.terrainRow.style.display = isLol() ? 'none' : '';
 
+    // Le pilote automatique aussi : en mode LoL on ne se déplace pas par
+    // direction mais par ordre de clic, et la visée ennemie réagit à cet
+    // ordre. Piloter ça demanderait un tout autre bot, donc l'option
+    // disparaît au lieu d'exister sans rien faire.
+    el.botRow.style.display = isLol() ? 'none' : '';
+    if (isLol() && prefs.bot) { prefs.bot = false; savePrefs(); }
+
     document.querySelectorAll('.toggle').forEach(btn => {
       const opt = btn.dataset.opt;
       const val = btn.dataset.val === 'true' ? true : (btn.dataset.val === 'false' ? false : btn.dataset.val);
@@ -5682,6 +6308,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     el.terrainHint.textContent = prefs.endless
       ? 'Secteurs générés à l\'infini : piliers qui bloquent les tirs, flaques qui ralentissent, plaques qui rechargent le dash. Le champ d\'effondrement te poursuit à 52 % de ta vitesse — fuir marche, mais chaque seconde passée à courir est une seconde sans frôlement, donc sans adrénaline.'
       : 'Arène fermée qui rétrécit par paliers. Le terrain de référence : rien à fuir, tout à lire. C\'est ici que les records comptent.';
+
+    el.botHint.textContent = prefs.bot
+      ? 'Le bot anticipe la position de chaque danger à quatre horizons et choisit la direction la plus sûre. Il dashe quand aucune n\'est sûre, déclenche l\'adrénaline quand ça se resserre, et respecte le défi en cours. Sa partie n\'enregistre aucun record.'
+      : 'Tu peux laisser le bot jouer à ta place pour voir une difficulté de haut, ou comparer sa lecture à la tienne. Indisponible en mode LoL.';
   }
 
   function renderControls() {
@@ -5697,6 +6327,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     game.state = 'menu';
     lolGame.state = 'menu';
     hide(el.pause); hide(el.dead); show(el.menu);
+    root.Touch.hide();
     buildMenu();
   }
 
@@ -5704,7 +6335,16 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     hide(el.menu); hide(el.dead); hide(el.pause);
     // L'autre moteur est mis au repos : un seul tourne à la fois.
     (isLol() ? game : lolGame).state = 'menu';
-    G().start(curDiff(), { endless: prefs.endless, quality: prefs.quality, shake: prefs.shake });
+    // Un seul système d'entrée écoute le canvas à la fois, sinon un appui
+    // tactile piloterait les deux modes.
+    root.Input.enabled = !isLol();
+    root.LolInput.enabled = isLol();
+    root.Touch.setMode(isLol() ? 'lol' : 'classic');
+    root.Touch.show();
+    G().start(curDiff(), {
+      endless: prefs.endless, quality: prefs.quality, shake: prefs.shake,
+      bot: !isLol() && prefs.bot
+    });
   }
 
   /* --- Écran de mort ----------------------------------------------------------- */
@@ -5724,9 +6364,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
       stat('Intensité atteinte', '×' + game.director.I.toFixed(2)) +
       stat('Dashs utilisés', String(game.stats.dashes));
 
-    let v = game.newRecord
-      ? '<b>Nouveau record.</b> '
-      : 'Il manquait <b>' + (game.best - game.elapsed).toFixed(2) + 's</b> pour battre ton record. ';
+    let v = game.botActive
+      ? '<b>Partie jouée par le bot</b> — aucun record enregistré, ce serait le score de la machine. '
+      : (game.newRecord
+          ? '<b>Nouveau record.</b> '
+          : 'Il manquait <b>' + (game.best - game.elapsed).toFixed(2) + 's</b> pour battre ton record. ');
     v += nx
       ? 'Prochain objectif raté de <b>' + Math.max(0, nx.t - game.elapsed).toFixed(1) + 's</b> : ' +
         nx.label + ' (' + CFG.BUFFS[nx.reward].name + ').'
@@ -5734,10 +6376,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     if (game.objectives.failed > 0) {
       v += ' <b>' + game.objectives.failed + '</b> défi(s) raté(s) : autant de vagues de punition subies.';
     }
-    if (game.stats.graze < game.elapsed * 0.5 && !d.impossible) {
+    if (!game.botActive && game.stats.graze < game.elapsed * 0.5 && !d.impossible) {
       v += ' Tu joues loin des balles — le frôlement est la seule source d\'adrénaline.';
     }
     el.verdict.innerHTML = v;
+    root.Touch.hide();
     show(el.dead);
   };
 
@@ -5771,28 +6414,32 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
       v += ' Tu manges beaucoup de CC : un enracinement ne tue pas, c\'est le sort suivant qui tue. Garde la Purge pour ça.';
     }
     el.verdict.innerHTML = v;
+    root.Touch.hide();
     show(el.dead);
   };
 
   /* --- Contrôles globaux -------------------------------------------------------- */
   el.start.addEventListener('click', startRun);
   el.retry.addEventListener('click', startRun);
-  el.resume.addEventListener('click', () => {
-    G().state = 'playing'; hide(el.pause);
-    root.Input.clearAll(); root.LolInput.clearAll();
-  });
+  /** Bascule pause : partagée par la touche Échap et le bouton tactile. */
+  function togglePause() {
+    const g = G();
+    if (g.state === 'playing') {
+      g.state = 'paused'; show(el.pause); root.Touch.hide();
+      root.Input.clearAll(); root.LolInput.clearAll();
+    } else if (g.state === 'paused') {
+      g.state = 'playing'; hide(el.pause); root.Touch.show();
+      root.Input.clearAll(); root.LolInput.clearAll();
+    }
+  }
+
+  el.resume.addEventListener('click', togglePause);
   el.quit.addEventListener('click', toMenu);
   el.toMenu.addEventListener('click', toMenu);
 
   root.addEventListener('keydown', e => {
     const g = G();
-    if (e.code === 'Escape' || e.code === 'KeyP') {
-      if (g.state === 'playing') { g.state = 'paused'; show(el.pause); }
-      else if (g.state === 'paused') {
-        g.state = 'playing'; hide(el.pause);
-        root.Input.clearAll(); root.LolInput.clearAll();
-      }
-    }
+    if (e.code === 'Escape' || e.code === 'KeyP') togglePause();
     if (e.code === 'KeyR' && (g.state === 'dead' || g.state === 'paused')) startRun();
     if (e.code === 'Enter' && g.state === 'menu') startRun();
   });
@@ -5821,7 +6468,12 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
       g.fx.update(dt);
     }
     g.render();
+    if (g.state === 'playing') root.Touch.sync(g);
   }
+
+  // Commandes tactiles : le bouton pause du HUD mobile partage la bascule
+  // du clavier, pour qu'il n'y ait qu'un seul chemin de code.
+  root.Touch.init(togglePause);
 
   buildMenu();
   requestAnimationFrame(frame);

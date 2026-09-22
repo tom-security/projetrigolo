@@ -23,7 +23,12 @@
   let holdMove = false;          // clic droit maintenu = ordre régénéré en continu
   let attached = false;
 
+  // Appuis venant des boutons tactiles, mêmes noms d'action que les touches.
+  const vDown = Object.create(null);
+  const vPressed = Object.create(null);
+
   function held(a) {
+    if (vDown[a]) return true;
     const c = MAP[a];
     if (!c) return false;
     for (let i = 0; i < c.length; i++) if (down[c[i]]) return true;
@@ -31,6 +36,7 @@
   }
 
   function tapped(a) {
+    if (vPressed[a]) { vPressed[a] = false; return true; }
     const c = MAP[a];
     if (!c) return false;
     for (let i = 0; i < c.length; i++) {
@@ -38,6 +44,9 @@
     }
     return false;
   }
+
+  function vPress(a) { vDown[a] = true; vPressed[a] = true; }
+  function vRelease(a) { vDown[a] = false; }
 
   /** Ordre de déplacement en attente, ou null. */
   function takeMoveOrder() {
@@ -49,6 +58,8 @@
   function clearAll() {
     for (const k in down) down[k] = false;
     for (const k in pressed) pressed[k] = false;
+    for (const k in vDown) vDown[k] = false;
+    for (const k in vPressed) vPressed[k] = false;
     moveOrder = null;
     holdMove = false;
   }
@@ -89,7 +100,10 @@
     root.addEventListener('mouseup', e => { if (e.button === 2) holdMove = false; });
 
     // Tactile : un appui vaut un clic droit.
+    // Les deux modes écoutent le même canvas ; `enabled` évite qu'un appui
+    // destiné au mode clavier crée ici un ordre de déplacement fantôme.
     canvas.addEventListener('touchstart', e => {
+      if (!api.enabled) return;
       const t = e.changedTouches[0], r = canvas.getBoundingClientRect();
       mouse.sx = t.clientX - r.left; mouse.sy = t.clientY - r.top; mouse.inside = true;
       moveOrder = { sx: mouse.sx, sy: mouse.sy };
@@ -97,6 +111,7 @@
       e.preventDefault();
     }, { passive: false });
     canvas.addEventListener('touchmove', e => {
+      if (!api.enabled) return;
       const t = e.changedTouches[0], r = canvas.getBoundingClientRect();
       mouse.sx = t.clientX - r.left; mouse.sy = t.clientY - r.top;
       e.preventDefault();
@@ -106,5 +121,9 @@
     canvas.addEventListener('touchcancel', end);
   }
 
-  root.LolInput = { attach, held, tapped, takeMoveOrder, clearAll, mouse };
+  const api = {
+    attach, held, tapped, takeMoveOrder, clearAll, mouse,
+    vPress, vRelease, enabled: true
+  };
+  root.LolInput = api;
 })(window);
