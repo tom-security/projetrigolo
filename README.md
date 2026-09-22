@@ -7,6 +7,24 @@ Ouvrir `index.html` dans un navigateur. Aucune dépendance, aucun build.
 
 ---
 
+## Deux modes
+
+Le choix se fait en haut du menu. Chaque mode a son propre moteur, ses propres
+difficultés et ses propres records.
+
+| | **BULLET-HELL** | **DODGE LoL** |
+|---|---|---|
+| Contrôle | Clavier, déplacement libre | **Clic droit**, ordre de déplacement |
+| Menace | Rideaux de projectiles | Champions ennemis qui **incantent** |
+| Compétence | Lire un pattern, se placer | **Juker** : re-cliquer pendant l'incantation |
+| Outils | Dash, focus, adrénaline | Flash, ruée, purge, stase |
+| Échelle | Pixels | **Unités LoL** (MS 335-400, Flash 400) |
+
+Le mode bullet-hell est décrit ci-dessous ; le mode LoL a sa propre section à
+la fin.
+
+---
+
 ## Le contrat
 
 **Une touche = la mort.** Pas de barre de vie, pas de régénération. Le hitbox
@@ -162,3 +180,104 @@ entre deux frames.
 
 Pour régler l'équilibrage, il suffit de toucher `js/config.js`. Pour ajouter une
 attaque : une fonction dans `js/patterns.js` et une ligne dans le registre.
+
+
+---
+
+# Mode DODGE LoL
+
+Le deuxième mode reproduit la mécanique d'esquive de League of Legends, qui
+n'est pas la même compétence que l'esquive de bullet-hell.
+
+## Ce qui change
+
+**Le déplacement est un ordre, pas une direction.** Clic droit : le champion
+part à vitesse pleine vers ce point et y va jusqu'au bout. Aucune inertie,
+aucune accélération — comme en jeu. Tout le skill est dans le choix du point
+et l'instant du re-clic. `S` arrête le déplacement en cours.
+
+**La menace a un visage.** Des champions ennemis sont à l'écran, avec une
+barre d'incantation et un indicateur au sol. On ne réagit pas à un projectile
+qui surgit, on réagit à une animation — le *tell* de LoL.
+
+**Et surtout : ils re-visent pendant qu'ils incantent.** Le point visé est
+calculé sur **ton ordre de déplacement**, pas sur ta position. Marcher en
+ligne droite revient à leur offrir la cible. Re-cliquer pendant l'incantation
+déplace la ligne : c'est le juke, et c'est la seule compétence que ce mode
+entraîne. Le taux de prédiction ennemie est affiché en permanence en haut à
+gauche, et passe de 0 % en EASY à 100 % en INFERNAL.
+
+## Le contrôle de foule ne tue pas
+
+Un grappin ou un enracinement ne fait aucun dégât. Il te met en position de
+mourir du sort suivant — ce qui est exactement la façon dont on meurt en LoL.
+
+| Effet | Conséquence |
+|---|---|
+| **Racine** | Immobilisé. Le **Flash passe encore**. |
+| **Grappin** | Tiré vers le lanceur, puis immobilisé. |
+| **Projection** | Plus rien ne répond, Flash compris. |
+| **Ralentissement** | Vitesse réduite. |
+
+La **Purge** (`A`) annule tout ça. La garder pour le bon moment fait la
+différence entre un enracinement gênant et une mort.
+
+## Les sbires bloquent
+
+Les skillshots à collision (grappins, enracinements) s'arrêtent sur le premier
+sbire touché. **Se placer derrière un sbire est une esquive à part entière**,
+au même titre qu'un pas de côté. Leur nombre baisse avec la difficulté : 5 en
+EASY, 2 en ULTRA, **zéro en INFERNAL** où plus rien ne bloque.
+
+## Grandeurs de référence
+
+Tout est calé sur les vraies valeurs du jeu, y compris le cadrage caméra
+(~2050 unités de large).
+
+| | Valeur |
+|---|---|
+| Vitesse de déplacement | 335 → 400 avec les bottes |
+| Rayon de hitbox | 55 (champion ~65) |
+| Portée du Flash | 400 |
+| Grappin | portée 1050, vitesse 1800, incantation 0,25 s |
+| Enracinement | portée 1300, vitesse 1200, largeur 100 |
+| Trait mystique | portée 1150, vitesse 2000, traverse tout |
+| Zones d'effet | rayon 150 → 210 (Ziggs Q ~130, Xerath R ~200) |
+
+La **fenêtre d'esquive réelle** = incantation + temps de vol. C'est ce nombre
+que la difficulté fait varier, pas une densité de projectiles :
+
+| | Incantation | Fenêtre totale | Prédiction | Ennemis | Sbires |
+|---|---|---|---|---|---|
+| EASY | ×2,0 | ~1,3 s | 0 % | 1–2 | 5 |
+| MEDIUM | ×1,4 | ~0,95 s | 45 % | 2–3 | 4 |
+| HARD | ×0,9 | ~0,70 s | 75 % | 3–4 | 3 |
+| ULTRA HARD | ×0,55 | ~0,50 s | 92 % | 5–7 | 2 |
+| INFERNAL | ×0,30 | ~0,25 s | **100 %** | 6–9 | **0** |
+
+## Objectifs propres au mode
+
+Les défis portent sur le geste qu'on veut entraîner : **esquiver N skillshots
+de justesse** (passage à moins de 150 unités), survivre sans Flash, ne subir
+aucun CC. Les récompenses sont des sorts d'invocateur et des objets — Flash,
+ruée, purge, bottes, bouclier de sorts, ténacité, stase.
+
+L'écran de mort diagnostique le geste : si tu donnes moins de 0,55 ordre par
+seconde, il te le dit — à ce rythme tu ne jukes pas, tu marches en ligne
+droite.
+
+## Architecture
+
+Le mode vit entièrement dans `js/lol/`. Aucun fichier de gameplay du mode
+bullet-hell n'a été modifié ; seuls `util.js` et `fx.js` sont partagés, tels
+quels.
+
+| Fichier | Rôle |
+|---|---|
+| `js/lol/config.js` | difficultés, sorts, objectifs — **tout l'équilibrage** |
+| `js/lol/abilities.js` | kits ennemis, avec leurs vraies grandeurs |
+| `js/lol/units.js` | champions ennemis, sbires, **prédiction de visée** |
+| `js/lol/entities.js` | skillshots : ligne, zone, cône, sol, rayon |
+| `js/lol/player.js` | déplacement au clic, CC, Flash, purge, stase |
+| `js/lol/director.js` · `objectives.js` | effectif ennemi et cadence · punition / récompense |
+| `js/lol/arena.js` · `hud.js` · `game.js` | terrain et caméra · interface · moteur |

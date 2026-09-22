@@ -16,17 +16,22 @@
       <h1 class="title">DODGE<span>TRAINER</span></h1>
       <p class="tagline">Pas d'attaque. Pas de sort. Juste toi, et tout ce qui veut te toucher.</p>
 
+      <h2 class="section-label">Mode</h2>
+      <div id="mode-list" class="mode-grid"></div>
+
       <h2 class="section-label">Difficulté</h2>
       <div id="difficulty-list" class="diff-grid"></div>
 
       <div id="diff-details" class="diff-details"></div>
 
-      <h2 class="section-label">Terrain</h2>
-      <div class="toggle-row">
-        <button class="toggle" data-opt="endless" data-val="false">Arène fermée <em>(recommandé)</em></button>
-        <button class="toggle" data-opt="endless" data-val="true">Carte infinie <em>(procédurale)</em></button>
+      <div id="terrain-row">
+        <h2 class="section-label">Terrain</h2>
+        <div class="toggle-row">
+          <button class="toggle" data-opt="endless" data-val="false">Arène fermée <em>(recommandé)</em></button>
+          <button class="toggle" data-opt="endless" data-val="true">Carte infinie <em>(procédurale)</em></button>
+        </div>
+        <p class="hint" id="terrain-hint"></p>
       </div>
-      <p class="hint" id="terrain-hint"></p>
 
       <div class="toggle-row small">
         <button class="toggle mini" data-opt="quality" data-val="high">Effets max</button>
@@ -37,13 +42,7 @@
 
       <button id="start-btn" class="primary">LANCER L'ENTRAÎNEMENT</button>
 
-      <div class="controls">
-        <span><b>ZQSD / WASD / ↑←↓→</b> bouger</span>
-        <span><b>Espace</b> dash <em>(à débloquer)</em></span>
-        <span><b>Maj</b> focus <em>(à débloquer)</em></span>
-        <span><b>E</b> adrénaline <em>(à débloquer)</em></span>
-        <span><b>Échap</b> pause · <b>R</b> relancer</span>
-      </div>
+      <div class="controls" id="controls"></div>
     </div>
   </div>
 
@@ -82,6 +81,17 @@
 <script src="js/player.js"></script>
 <script src="js/hud.js"></script>
 <script src="js/game.js"></script>
+<script src="js/lol/config.js"></script>
+<script src="js/lol/input.js"></script>
+<script src="js/lol/entities.js"></script>
+<script src="js/lol/units.js"></script>
+<script src="js/lol/abilities.js"></script>
+<script src="js/lol/arena.js"></script>
+<script src="js/lol/director.js"></script>
+<script src="js/lol/objectives.js"></script>
+<script src="js/lol/player.js"></script>
+<script src="js/lol/hud.js"></script>
+<script src="js/lol/game.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
