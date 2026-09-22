@@ -1,0 +1,105 @@
+/* ---- Thème League of Legends : bleus profonds + accents dorés ---- */
+:root {
+  --gold: #c8aa6e;
+  --gold-bright: #f0e6d2;
+  --blue-deep: #010a13;
+  --blue-panel: #0a1428;
+  --blue-edge: #1e2328;
+  --hp: #24b24c;
+  --mp: #1e9de3;
+  --danger: #c0392b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: radial-gradient(circle at 50% 0%, #0a1428 0%, var(--blue-deep) 70%);
+  color: var(--gold-bright);
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+}
+
+#app { width: min(1280px, 98vw); display: flex; flex-direction: column; gap: 10px; }
+
+#topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  border: 1px solid var(--gold); border-radius: 3px;
+  background: linear-gradient(180deg, #0a1428, #010a13);
+  padding: 10px 18px;
+}
+#topbar h1 { font-size: 20px; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); }
+#topbar h1 span { color: var(--gold-bright); }
+
+#stats { display: flex; gap: 26px; }
+.stat { display: flex; flex-direction: column; align-items: flex-end; }
+.stat .label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #a09b8c; }
+.stat .value { font-size: 18px; color: var(--gold); font-variant-numeric: tabular-nums; }
+
+#stage { position: relative; border: 1px solid var(--gold); border-radius: 3px; overflow: hidden; }
+canvas { display: block; width: 100%; height: auto; background: #071019; cursor: crosshair; }
+
+#overlay {
+  position: absolute; inset: 0; display: none;
+  align-items: center; justify-content: center;
+  background: rgba(1, 10, 19, 0.88); backdrop-filter: blur(2px);
+}
+#overlay.visible { display: flex; }
+.panel {
+  border: 1px solid var(--gold); background: var(--blue-panel);
+  padding: 28px 36px; max-width: 560px; text-align: center;
+}
+.panel h2 { color: var(--gold); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+.panel p { color: #a09b8c; margin-bottom: 16px; }
+.keys { list-style: none; text-align: left; margin-bottom: 20px; font-size: 14px; color: #cdbe91; }
+.keys li { padding: 3px 0; border-bottom: 1px solid #1e2328; }
+.keys b { color: var(--gold); }
+
+button {
+  font: inherit; text-transform: uppercase; letter-spacing: 2px;
+  background: linear-gradient(180deg, #1e2328, #010a13);
+  color: var(--gold); border: 1px solid var(--gold);
+  padding: 10px 26px; cursor: pointer; transition: all .15s;
+}
+button:hover { background: var(--gold); color: var(--blue-deep); }
+
+#hud {
+  display: flex; align-items: center; gap: 24px;
+  border: 1px solid var(--gold); border-radius: 3px;
+  background: linear-gradient(180deg, #0a1428, #010a13);
+  padding: 12px 18px;
+}
+.skillbar { display: flex; gap: 10px; }
+.slot {
+  position: relative; width: 58px; height: 58px;
+  border: 1px solid var(--gold); background: #0b1c30;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--gold-bright); overflow: hidden;
+}
+.slot .key {
+  position: absolute; bottom: 2px; right: 4px; font-size: 11px; color: var(--gold);
+}
+.slot .cd-mask {
+  position: absolute; inset: 0; background: rgba(1, 10, 19, 0.78);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; color: var(--gold-bright); font-variant-numeric: tabular-nums;
+}
+.slot.ready .cd-mask { display: none; }
+.slot.ready { box-shadow: 0 0 8px rgba(200, 170, 110, .45) inset; }
+.slot .cost { position: absolute; top: 2px; left: 4px; font-size: 10px; color: var(--mp); }
+
+.bars { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.bar-wrap {
+  position: relative; height: 18px; background: #10161c;
+  border: 1px solid #463714;
+}
+.bar { height: 100%; width: 100%; transition: width .08s linear; }
+.bar.hp { background: linear-gradient(180deg, #33d766, var(--hp)); }
+.bar.mp { background: linear-gradient(180deg, #37b6ff, var(--mp)); }
+.bar-wrap span {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #f0e6d2; text-shadow: 0 1px 2px #000; font-variant-numeric: tabular-nums;
+}
