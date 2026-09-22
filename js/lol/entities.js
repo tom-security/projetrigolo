@@ -230,7 +230,10 @@
     this.tell = o.tell === undefined ? 1 : o.tell;
     this.caster = o.caster || null;
     this.state = 'cast';
-    this.threat = true;
+    // Pas comptabilisé comme « esquive de justesse » : edge() ne renvoie pas
+    // une distance mais dedans/dehors, donc il n'y a pas de frôlement à
+    // mesurer. Un cône s'évite par le placement, pas par le juke.
+    this.threat = false;
     this.grazed = false;
   }
 

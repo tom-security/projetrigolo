@@ -53,7 +53,7 @@
       objectives: [
         { t: 30,  type: 'survive',   reward: 'flash',   label: 'Tenir 30 s' },
         { t: 60,  type: 'survive',   reward: 'boots',   label: 'Tenir 60 s' },
-        { t: 95,  type: 'challenge', cond: 'juke',    target: 6,  duration: 25, reward: 'dash',    label: 'Esquiver 6 skillshots de justesse' },
+        { t: 95,  type: 'challenge', cond: 'juke',    target: 4,  duration: 25, reward: 'dash',    label: 'Esquiver 4 skillshots de justesse' },
         { t: 135, type: 'survive',   reward: 'cleanse', label: 'Tenir 2:15' },
         { t: 175, type: 'challenge', cond: 'noflash', duration: 25, reward: 'shield',  label: 'Survivre 25 s sans Flash' },
         { t: 220, type: 'survive',   reward: 'boots2',  label: 'Tenir 3:40' }
@@ -110,7 +110,7 @@
       objectives: [
         { t: 20,  type: 'survive',   reward: 'flash',   label: 'Tenir 20 s' },
         { t: 42,  type: 'survive',   reward: 'boots',   label: 'Tenir 42 s' },
-        { t: 62,  type: 'challenge', cond: 'juke',    target: 14, duration: 20, reward: 'dash',     label: 'Esquiver 14 skillshots de justesse' },
+        { t: 62,  type: 'challenge', cond: 'juke',    target: 9, duration: 20, reward: 'dash',     label: 'Esquiver 9 skillshots de justesse' },
         { t: 90,  type: 'survive',   reward: 'cleanse', label: 'Tenir 1:30' },
         { t: 120, type: 'challenge', cond: 'nocc',    duration: 18, reward: 'tenacity', label: 'Aucun CC subi pendant 18 s' },
         { t: 150, type: 'challenge', cond: 'noflash', duration: 18, reward: 'zhonya',   label: 'Survivre 18 s sans Flash' },

@@ -34,6 +34,8 @@
     this.rootT = 0;
     this.knockT = 0;
     this.slowT = 0; this.slowAmt = 0;
+    this.pull = null;              // traction de grappin en cours
+    this.queuedOrder = null;       // ordre donné pendant un CC, joué à sa fin
 
     this.flashCd = 0;
     this.dashMax = 1; this.dashCharges = 0; this.dashCd = 0;
@@ -172,6 +174,7 @@
       this.game.fx.text(this.x, this.y - 80, 'RALENTI', '#7b8cff', 20, 50);
     }
 
+    this.queuedOrder = null;
     this.game.stats.ccTaken++;
     this.game.fx.kick(9);
     this.game.fx.blink('#ff3b30', 0.18);
@@ -210,12 +213,27 @@
     if (In.tapped('stop')) this.stop();
 
     const ord = In.takeMoveOrder();
-    if (ord && !this.stunned()) {
+    if (ord) {
       const w = this.game.screenToWorld(ord.sx, ord.sy);
-      // Un clic maintenu ne compte pas comme un nouvel ordre : sinon toutes
-      // les statistiques de juke seraient faussées.
-      if (ord.held) { this.moveTarget = { x: w.x, y: w.y }; }
-      else this.order(w.x, w.y);
+      if (this.stunned()) {
+        // Comme en jeu : on peut cliquer pendant un CC, le champion part
+        // dès qu'il est libéré. Perdre l'ordre obligerait à re-cliquer.
+        this.queuedOrder = { x: w.x, y: w.y, held: !!ord.held };
+      } else if (ord.held) {
+        // Un clic maintenu ne compte pas comme un nouvel ordre : sinon les
+        // statistiques de juke seraient faussées.
+        this.moveTarget = { x: w.x, y: w.y };
+      } else {
+        this.order(w.x, w.y);
+      }
+    }
+
+    // Sortie de CC : on rejoue l'ordre mis en attente.
+    if (this.queuedOrder && !this.stunned()) {
+      const q = this.queuedOrder;
+      this.queuedOrder = null;
+      if (q.held) this.moveTarget = { x: q.x, y: q.y };
+      else this.order(q.x, q.y);
     }
 
     // --- Traction du grappin ---------------------------------------------

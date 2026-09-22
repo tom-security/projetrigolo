@@ -18,6 +18,7 @@
   Director.prototype.reset = function (diff) {
     this.diff = diff;
     this.I = 1;                       // intensité courante
+    this.bonus = 0;                   // surcroît durable infligé par les punitions
     // Sursis d'ouverture : on laisse le temps de lire l'arène avant le premier
     // pattern. Il se raccourcit avec la difficulté, et n'existe presque pas en
     // infernal.
@@ -94,14 +95,17 @@
     // Et un surcroît d'intensité temporaire : la sanction se ressent dans le temps.
     this.surge = 1 + 0.5 * severity;
     this.surgeT = 6;
-    this.I = Math.min(this.diff.intensityCap, this.I + 0.35 * severity);
+    // Stocké à part : écrit dans this.I, il était écrasé dès la frame suivante
+    // par le recalcul de la rampe, et la punition ne coûtait donc rien.
+    this.bonus += 0.35 * severity;
   };
 
   Director.prototype.update = function (dt, elapsed) {
     const d = this.diff;
 
     // --- Intensité : montée continue, jamais de palier de repos ------------
-    this.I = Math.min(d.intensityCap, 1 + elapsed * d.intensityRate);
+    if (this.bonus > 0) this.bonus = Math.max(0, this.bonus - dt * 0.03);
+    this.I = Math.min(d.intensityCap, 1 + elapsed * d.intensityRate + this.bonus);
 
     if (this.surgeT > 0) {
       this.surgeT -= dt;

@@ -228,7 +228,12 @@
           this.hazards.splice(i, 1);
           continue;
         }
+        if (hz._applied) continue;                 // un sort ne contrôle qu'une fois
         if (p.applyEffect(hz.effect, hz) === 'die') { this.die(deathLabel(hz)); return; }
+        // Une zone persistante reste en jeu après avoir touché : sans ce
+        // marqueur elle ré-appliquait son contrôle à chaque frame (36 fois
+        // pour une seule projection), gonflant le compteur et la bande-son.
+        hz._applied = true;
         if (hz.type === 'line') this.hazards.splice(i, 1);   // un hook ne traverse pas
         continue;
       }

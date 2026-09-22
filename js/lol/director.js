@@ -14,6 +14,7 @@
   Director.prototype.reset = function (diff) {
     this.diff = diff;
     this.I = 1;
+    this.bonus = 0;                   // surcroît durable infligé par les punitions
     this.next = Math.max(1.0, diff.castEvery * 0.9);
     this.recent = [];
     this.surge = 0; this.surgeT = 0;
@@ -67,12 +68,15 @@
     }
     this.surge = 1 + 0.5 * severity;
     this.surgeT = 6;
-    this.I = Math.min(this.diff.intensityCap, this.I + 0.35 * severity);
+    // Ce surcroît doit SURVIVRE au recalcul de la rampe fait à chaque frame :
+    // il est donc stocké à part et ajouté, pas écrit dans this.I.
+    this.bonus += 0.35 * severity;
   };
 
   Director.prototype.update = function (dt, elapsed) {
     const d = this.diff, g = this.game;
-    this.I = Math.min(d.intensityCap, 1 + elapsed * d.intensityRate);
+    if (this.bonus > 0) this.bonus = Math.max(0, this.bonus - dt * 0.03);
+    this.I = Math.min(d.intensityCap, 1 + elapsed * d.intensityRate + this.bonus);
 
     if (this.surgeT > 0) { this.surgeT -= dt; if (this.surgeT <= 0) this.surge = 0; }
     const rate = this.I * (1 + (this.surge || 0));
@@ -93,7 +97,12 @@
       g.casters.push(c);
       g.fx.ring(x, y, 20, 40, c.hue, 700);
     }
-    while (g.casters.length > want) g.casters.pop();
+    while (g.casters.length > want) {
+      const gone = g.casters.pop();
+      // Sans ça, les sorts différés déjà programmés (barrage, charge)
+      // continuaient de se déclencher pour un ennemi qui n'existe plus.
+      if (gone) gone.alive = false;
+    }
 
     // --- Cadence des incantations -----------------------------------------
     this.next -= dt;

@@ -27,7 +27,7 @@
 
     /* ---- Chrono + difficulté (haut gauche) ---------------------------- */
     label(ctx, 22, 50, U.fmtTime(g.elapsed), 38, '#fff');
-    label(ctx, 22, 70, d.name + (g.arena.endless ? ' · CARTE INFINIE' : ''), 11.5, d.color);
+    label(ctx, 22, 70, 'BULLET-HELL · ' + d.name + (g.arena.endless ? ' · CARTE INFINIE' : ''), 11.5, d.color);
 
     // Intensité : montre que la difficulté monte en permanence.
     const ik = U.inv(1, d.intensityCap, g.director.I);

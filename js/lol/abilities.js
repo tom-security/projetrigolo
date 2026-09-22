@@ -18,6 +18,12 @@
   'use strict';
   const U = root.U, E = root.LolEnt, Units = root.LolUnits;
 
+  /** Sorts sans projectile (cône, rayon) : leur « vitesse » sert uniquement à
+      estimer le temps de vol pour la visée prédictive. Elle doit être quasi
+      infinie, sinon le lanceur anticipe des secondes de déplacement et vise
+      très au-delà de sa propre portée. */
+  const INSTANT = 99999;
+
   function mul(game) { return game.diff.projSpeedMul; }
   function tell(game) {
     return game.diff.tell * (game.player.has('ward') ? 1.9 : 1);
@@ -99,7 +105,7 @@
     {
       id: 'cone', key: 'W', name: 'Souffle', tier: 1,
       w: { skill: 1.0, spam: 0.2, brutal: 0.3 },
-      cast: 0.45, cd: 9, range: 760, speed: 1,
+      cast: 0.45, cd: 9, range: 760, speed: INSTANT,
       spawn(c, g, ct) {
         const pt = target(c, g, 3000, ct);
         c.aim = Math.atan2(pt.y - c.y, pt.x - c.x);
@@ -204,7 +210,7 @@
     {
       id: 'beam', key: 'R', name: 'Rayon', tier: 3,
       w: { skill: 0.9, spam: 0.3, brutal: 0.7 },
-      cast: 0.6, cd: 15, range: 3000, speed: 1,
+      cast: 0.6, cd: 15, range: 3000, speed: INSTANT,
       spawn(c, g, ct) {
         const pt = target(c, g, 4000, ct);
         c.aim = Math.atan2(pt.y - c.y, pt.x - c.x);
@@ -231,7 +237,7 @@
     {
       id: 'sweep', key: 'R', name: 'Balayage', tier: 5,
       w: { skill: 0.2, spam: 0.8, brutal: 1.0 },
-      cast: 0.45, cd: 12, range: 3000, speed: 1,
+      cast: 0.45, cd: 12, range: 3000, speed: INSTANT,
       spawn(c, g, ct) {
         const pt = target(c, g, 4000, ct);
         const a0 = Math.atan2(pt.y - c.y, pt.x - c.x);
