@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>DODGE TRAINER</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- ============ MENU PRINCIPAL ============ -->
+  <div id="menu" class="overlay">
+    <div class="panel">
+      <h1 class="title">DODGE<span>TRAINER</span></h1>
+      <p class="tagline">Pas d'attaque. Pas de sort. Juste toi, et tout ce qui veut te toucher.</p>
+
+      <h2 class="section-label">Mode</h2>
+      <div id="mode-list" class="mode-grid"></div>
+
+      <h2 class="section-label">Difficulté</h2>
+      <div id="difficulty-list" class="diff-grid"></div>
+
+      <div id="diff-details" class="diff-details"></div>
+
+      <div id="terrain-row">
+        <h2 class="section-label">Terrain</h2>
+        <div class="toggle-row">
+          <button class="toggle" data-opt="endless" data-val="false">Arène fermée <em>(recommandé)</em></button>
+          <button class="toggle" data-opt="endless" data-val="true">Carte infinie <em>(procédurale)</em></button>
+        </div>
+        <p class="hint" id="terrain-hint"></p>
+      </div>
+
+      <div class="toggle-row small">
+        <button class="toggle mini" data-opt="quality" data-val="high">Effets max</button>
+        <button class="toggle mini" data-opt="quality" data-val="low">Perfs max</button>
+        <button class="toggle mini" data-opt="shake" data-val="true">Shake ON</button>
+        <button class="toggle mini" data-opt="shake" data-val="false">Shake OFF</button>
+      </div>
+
+      <button id="start-btn" class="primary">LANCER L'ENTRAÎNEMENT</button>
+
+      <div class="controls" id="controls"></div>
+    </div>
+  </div>
+
+  <!-- ============ PAUSE ============ -->
+  <div id="pause" class="overlay hidden">
+    <div class="panel narrow">
+      <h1 class="title small">PAUSE</h1>
+      <p class="tagline">L'entraînement ne s'interrompt pas tout seul.</p>
+      <button id="resume-btn" class="primary">REPRENDRE</button>
+      <button id="quit-btn" class="ghost">RETOUR AU MENU</button>
+    </div>
+  </div>
+
+  <!-- ============ MORT ============ -->
+  <div id="dead" class="overlay hidden">
+    <div class="panel narrow">
+      <h1 class="title small dead-title">ÉLIMINÉ</h1>
+      <p id="death-cause" class="death-cause"></p>
+      <div id="run-stats" class="stats"></div>
+      <div id="run-verdict" class="verdict"></div>
+      <button id="retry-btn" class="primary">RELANCER <em>(R)</em></button>
+      <button id="menu-btn" class="ghost">MENU</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/config.js"></script>
+<script src="js/input.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/arena.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/patterns.js"></script>
+<script src="js/director.js"></script>
+<script src="js/objectives.js"></script>
+<script src="js/player.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/game.js"></script>
+<script src="js/lol/config.js"></script>
+<script src="js/lol/input.js"></script>
+<script src="js/lol/entities.js"></script>
+<script src="js/lol/units.js"></script>
+<script src="js/lol/abilities.js"></script>
+<script src="js/lol/arena.js"></script>
+<script src="js/lol/director.js"></script>
+<script src="js/lol/objectives.js"></script>
+<script src="js/lol/player.js"></script>
+<script src="js/lol/hud.js"></script>
+<script src="js/lol/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
