@@ -7,6 +7,32 @@ Ouvrir `index.html` dans un navigateur. Aucune dépendance, aucun build.
 
 ---
 
+## Fichier unique, transportable
+
+`dodge-trainer.html` est le jeu entier — HTML, CSS et les 24 fichiers JS — dans
+**un seul fichier de 223 Ko**. Il se double-clique, fonctionne hors ligne, et
+passe par clé USB, mail ou messagerie sans rien installer. Windows, macOS,
+Linux, Android : tout ce qui a un navigateur.
+
+Il est versionné dans le dépôt, donc téléchargeable directement sans cloner.
+
+Pour le régénérer après avoir modifié les sources :
+
+```bash
+node build.js
+```
+
+`build.js` n'a aucune dépendance : il lit `index.html` et remplace chaque
+`<link>` et chaque `<script src>` par son contenu, **dans l'ordre d'origine**
+— cet ordre compte, les modules se déclarent sur `window` et se lisent entre
+eux au chargement. Le script échoue si une référence externe subsiste.
+
+> Pourquoi pas un `.exe` ? Il faudrait Electron (~150 Mo, un build par système)
+> ou Tauri (chaîne Rust à installer). Pour un jeu canvas sans backend, le
+> fichier HTML autonome est plus petit, plus rapide et marche partout.
+
+---
+
 ## Deux modes
 
 Le choix se fait en haut du menu. Chaque mode a son propre moteur, ses propres
