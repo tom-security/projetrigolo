@@ -29,13 +29,17 @@
     ctx.save();
 
     /* ---- Chrono + difficulté (haut gauche) ---------------------------- */
-    label(ctx, 22, compact ? 42 : 50, U.fmtTime(g.elapsed), compact ? 26 : 38, '#fff');
-    label(ctx, 22, 70, 'BULLET-HELL · ' + d.name + (g.arena.endless ? ' · CARTE INFINIE' : ''), 11.5, d.color);
+    // Signature : présente en jeu dans les deux modes, jamais tapageuse.
+    // Sous 820 px elle percuterait le titre d'objectif centré, et la marque
+    // figure déjà sur le menu, la pause et l'écran de fin.
+    if (!compact) label(ctx, 22, 24, 'DODGE TRAINER', 10, 'rgba(200,210,240,.34)');
+    label(ctx, 22, compact ? 56 : 64, U.fmtTime(g.elapsed), compact ? 26 : 38, '#fff');
+    label(ctx, 22, 84, 'BULLET-HELL · ' + d.name + (g.arena.endless ? ' · CARTE INFINIE' : ''), 11.5, d.color);
 
     // Intensité : montre que la difficulté monte en permanence.
     const ik = U.inv(1, d.intensityCap, g.director.I);
-    bar(ctx, 22, 80, 168, 5, ik, d.color);
-    label(ctx, 196, 85, 'INTENSITÉ ×' + g.director.I.toFixed(2), 10.5, 'rgba(200,210,240,.72)');
+    bar(ctx, 22, 94, 168, 5, ik, d.color);
+    label(ctx, 196, 99, 'INTENSITÉ ×' + g.director.I.toFixed(2), 10.5, 'rgba(200,210,240,.72)');
 
     /* ---- Record (haut droite) ------------------------------------------ */
     if (g.best > 0) {
@@ -125,7 +129,7 @@
     /* ---- Objets obtenus ------------------------------------------------ */
     const iw = compact ? 21 : 26, istep = compact ? 25 : 31;
     let bx = 22;
-    const by = compact ? 126 : h - 34;
+    const by = compact ? 158 : h - 34;
     for (const id in p.buffs) {
       const b = CFG.BUFFS[id];
       if (bx + iw > w - 22) break;            // jamais au-delà du bord

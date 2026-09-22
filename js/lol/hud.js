@@ -45,11 +45,15 @@
     ctx.save();
 
     /* ---- Chrono, difficulté, intensité --------------------------------- */
-    label(ctx, 22, compact ? 42 : 50, U.fmtTime(g.elapsed), compact ? 26 : 38, '#fff');
-    label(ctx, 22, 70, 'DODGE LoL · ' + d.name, 11.5, d.color);
-    bar(ctx, 22, 80, 168, 5, U.inv(1, d.intensityCap, g.director.I), d.color);
-    label(ctx, 196, 85, 'INTENSITÉ ×' + g.director.I.toFixed(2), 10.5, 'rgba(200,210,240,.72)');
-    label(ctx, 22, 104, 'PRÉDICTION ENNEMIE ' + Math.round(d.predict * 100) + '%  ·  ' +
+    // Signature : présente en jeu dans les deux modes, jamais tapageuse.
+    // Sous 820 px elle percuterait le titre d'objectif centré, et la marque
+    // figure déjà sur le menu, la pause et l'écran de fin.
+    if (!compact) label(ctx, 22, 24, 'DODGE TRAINER', 10, 'rgba(200,210,240,.34)');
+    label(ctx, 22, compact ? 56 : 64, U.fmtTime(g.elapsed), compact ? 26 : 38, '#fff');
+    label(ctx, 22, 84, 'DODGE LoL · ' + d.name, 11.5, d.color);
+    bar(ctx, 22, 94, 168, 5, U.inv(1, d.intensityCap, g.director.I), d.color);
+    label(ctx, 196, 99, 'INTENSITÉ ×' + g.director.I.toFixed(2), 10.5, 'rgba(200,210,240,.72)');
+    label(ctx, 22, 118, 'PRÉDICTION ENNEMIE ' + Math.round(d.predict * 100) + '%  ·  ' +
       g.casters.length + ' ennemi' + (g.casters.length > 1 ? 's' : ''), 10.5, 'rgba(200,210,240,.5)');
 
     /* ---- Record --------------------------------------------------------- */
@@ -116,7 +120,7 @@
 
     /* ---- Objets obtenus --------------------------------------------------- */
     const iw = compact ? 21 : 26, istep = compact ? 25 : 31;
-    const iy = compact ? 126 : h - 46;
+    const iy = compact ? 140 : h - 46;
     let bx = 22;
     for (const id in p.buffs) {
       const b = CFG.BUFFS[id];
