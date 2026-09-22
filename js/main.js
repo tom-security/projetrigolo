@@ -27,6 +27,8 @@
     pause: document.getElementById('pause'),
     dead: document.getElementById('dead'),
     modeList: document.getElementById('mode-list'),
+    botRow: document.getElementById('bot-row'),
+    botHint: document.getElementById('bot-hint'),
     list: document.getElementById('difficulty-list'),
     details: document.getElementById('diff-details'),
     terrainRow: document.getElementById('terrain-row'),
@@ -79,7 +81,8 @@
   /* --- Préférences persistées ----------------------------------------------- */
   const PREF_KEY = 'dodgetrainer.prefs';
   const prefs = Object.assign(
-    { mode: 'classic', diff: 'medium', lolDiff: 'medium', endless: false, quality: 'high', shake: true },
+    { mode: 'classic', diff: 'medium', lolDiff: 'medium', endless: false,
+      quality: 'high', shake: true, bot: false },
     (() => { try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch (e) { return {}; } })()
   );
   function savePrefs() {
@@ -151,6 +154,13 @@
     // Le terrain procédural n'existe que dans le mode classique.
     el.terrainRow.style.display = isLol() ? 'none' : '';
 
+    // Le pilote automatique aussi : en mode LoL on ne se déplace pas par
+    // direction mais par ordre de clic, et la visée ennemie réagit à cet
+    // ordre. Piloter ça demanderait un tout autre bot, donc l'option
+    // disparaît au lieu d'exister sans rien faire.
+    el.botRow.style.display = isLol() ? 'none' : '';
+    if (isLol() && prefs.bot) { prefs.bot = false; savePrefs(); }
+
     document.querySelectorAll('.toggle').forEach(btn => {
       const opt = btn.dataset.opt;
       const val = btn.dataset.val === 'true' ? true : (btn.dataset.val === 'false' ? false : btn.dataset.val);
@@ -165,6 +175,10 @@
     el.terrainHint.textContent = prefs.endless
       ? 'Secteurs générés à l\'infini : piliers qui bloquent les tirs, flaques qui ralentissent, plaques qui rechargent le dash. Le champ d\'effondrement te poursuit à 52 % de ta vitesse — fuir marche, mais chaque seconde passée à courir est une seconde sans frôlement, donc sans adrénaline.'
       : 'Arène fermée qui rétrécit par paliers. Le terrain de référence : rien à fuir, tout à lire. C\'est ici que les records comptent.';
+
+    el.botHint.textContent = prefs.bot
+      ? 'Le bot anticipe la position de chaque danger à quatre horizons et choisit la direction la plus sûre. Il dashe quand aucune n\'est sûre, déclenche l\'adrénaline quand ça se resserre, et respecte le défi en cours. Sa partie n\'enregistre aucun record.'
+      : 'Tu peux laisser le bot jouer à ta place pour voir une difficulté de haut, ou comparer sa lecture à la tienne. Indisponible en mode LoL.';
   }
 
   function renderControls() {
@@ -180,6 +194,7 @@
     game.state = 'menu';
     lolGame.state = 'menu';
     hide(el.pause); hide(el.dead); show(el.menu);
+    root.Touch.hide();
     buildMenu();
   }
 
@@ -187,7 +202,16 @@
     hide(el.menu); hide(el.dead); hide(el.pause);
     // L'autre moteur est mis au repos : un seul tourne à la fois.
     (isLol() ? game : lolGame).state = 'menu';
-    G().start(curDiff(), { endless: prefs.endless, quality: prefs.quality, shake: prefs.shake });
+    // Un seul système d'entrée écoute le canvas à la fois, sinon un appui
+    // tactile piloterait les deux modes.
+    root.Input.enabled = !isLol();
+    root.LolInput.enabled = isLol();
+    root.Touch.setMode(isLol() ? 'lol' : 'classic');
+    root.Touch.show();
+    G().start(curDiff(), {
+      endless: prefs.endless, quality: prefs.quality, shake: prefs.shake,
+      bot: !isLol() && prefs.bot
+    });
   }
 
   /* --- Écran de mort ----------------------------------------------------------- */
@@ -207,9 +231,11 @@
       stat('Intensité atteinte', '×' + game.director.I.toFixed(2)) +
       stat('Dashs utilisés', String(game.stats.dashes));
 
-    let v = game.newRecord
-      ? '<b>Nouveau record.</b> '
-      : 'Il manquait <b>' + (game.best - game.elapsed).toFixed(2) + 's</b> pour battre ton record. ';
+    let v = game.botActive
+      ? '<b>Partie jouée par le bot</b> — aucun record enregistré, ce serait le score de la machine. '
+      : (game.newRecord
+          ? '<b>Nouveau record.</b> '
+          : 'Il manquait <b>' + (game.best - game.elapsed).toFixed(2) + 's</b> pour battre ton record. ');
     v += nx
       ? 'Prochain objectif raté de <b>' + Math.max(0, nx.t - game.elapsed).toFixed(1) + 's</b> : ' +
         nx.label + ' (' + CFG.BUFFS[nx.reward].name + ').'
@@ -217,10 +243,11 @@
     if (game.objectives.failed > 0) {
       v += ' <b>' + game.objectives.failed + '</b> défi(s) raté(s) : autant de vagues de punition subies.';
     }
-    if (game.stats.graze < game.elapsed * 0.5 && !d.impossible) {
+    if (!game.botActive && game.stats.graze < game.elapsed * 0.5 && !d.impossible) {
       v += ' Tu joues loin des balles — le frôlement est la seule source d\'adrénaline.';
     }
     el.verdict.innerHTML = v;
+    root.Touch.hide();
     show(el.dead);
   };
 
@@ -254,28 +281,32 @@
       v += ' Tu manges beaucoup de CC : un enracinement ne tue pas, c\'est le sort suivant qui tue. Garde la Purge pour ça.';
     }
     el.verdict.innerHTML = v;
+    root.Touch.hide();
     show(el.dead);
   };
 
   /* --- Contrôles globaux -------------------------------------------------------- */
   el.start.addEventListener('click', startRun);
   el.retry.addEventListener('click', startRun);
-  el.resume.addEventListener('click', () => {
-    G().state = 'playing'; hide(el.pause);
-    root.Input.clearAll(); root.LolInput.clearAll();
-  });
+  /** Bascule pause : partagée par la touche Échap et le bouton tactile. */
+  function togglePause() {
+    const g = G();
+    if (g.state === 'playing') {
+      g.state = 'paused'; show(el.pause); root.Touch.hide();
+      root.Input.clearAll(); root.LolInput.clearAll();
+    } else if (g.state === 'paused') {
+      g.state = 'playing'; hide(el.pause); root.Touch.show();
+      root.Input.clearAll(); root.LolInput.clearAll();
+    }
+  }
+
+  el.resume.addEventListener('click', togglePause);
   el.quit.addEventListener('click', toMenu);
   el.toMenu.addEventListener('click', toMenu);
 
   root.addEventListener('keydown', e => {
     const g = G();
-    if (e.code === 'Escape' || e.code === 'KeyP') {
-      if (g.state === 'playing') { g.state = 'paused'; show(el.pause); }
-      else if (g.state === 'paused') {
-        g.state = 'playing'; hide(el.pause);
-        root.Input.clearAll(); root.LolInput.clearAll();
-      }
-    }
+    if (e.code === 'Escape' || e.code === 'KeyP') togglePause();
     if (e.code === 'KeyR' && (g.state === 'dead' || g.state === 'paused')) startRun();
     if (e.code === 'Enter' && g.state === 'menu') startRun();
   });
@@ -304,7 +335,12 @@
       g.fx.update(dt);
     }
     g.render();
+    if (g.state === 'playing') root.Touch.sync(g);
   }
+
+  // Commandes tactiles : le bouton pause du HUD mobile partage la bascule
+  // du clavier, pour qu'il n'y ait qu'un seul chemin de code.
+  root.Touch.init(togglePause);
 
   buildMenu();
   requestAnimationFrame(frame);

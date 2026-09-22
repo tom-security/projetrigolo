@@ -39,9 +39,12 @@
 
   function draw(ctx, g, w, h) {
     const p = g.player, d = g.diff, o = g.objectives;
-    // Sous cette largeur le HUD se replie : sinon le chrono percute le titre
-    // d'objectif centré et les deux colonnes basses se chevauchent.
-    const compact = w < 820;
+    // Le HUD se replie quand l'écran est étroit OU bas de plafond : sinon le
+    // chrono percute le titre d'objectif centré et les colonnes basses se
+    // chevauchent.
+    const compact = w < 820 || h < 520;
+    // Les boutons tactiles occupent le coin bas-droit.
+    const touchUI = !!(root.Touch && root.Touch.isActive());
     ctx.save();
 
     /* ---- Chrono, difficulté, intensité --------------------------------- */
@@ -138,7 +141,7 @@
     if (p.shieldUp && !compact) label(ctx, 22, h - 54, '◇ BOUCLIER DE SORTS PRÊT', 11, '#b4dcff');
 
     /* ---- Statistiques ----------------------------------------------------- */
-    if (!compact) {
+    if (!compact && !touchUI) {
       label(ctx, w - 22, h - 62, 'ESQUIVES DE JUSTESSE ' + g.stats.jukes, 11, 'rgba(200,210,240,.5)', 'right');
       label(ctx, w - 22, h - 46, 'CC SUBIS ' + g.stats.ccTaken + '  ·  BLOQUÉS PAR SBIRE ' + g.stats.blocked,
         11, 'rgba(200,210,240,.5)', 'right');

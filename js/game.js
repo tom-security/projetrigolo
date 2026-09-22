@@ -94,6 +94,17 @@
     this.h = this.canvas.clientHeight || root.innerHeight;
     this.canvas.width = Math.floor(this.w * this.dpr);
     this.canvas.height = Math.floor(this.h * this.dpr);
+    this.computeZoom();
+  };
+
+  /** L'arène doit tenir à l'écran. Sur un grand écran elle y tient déjà et le
+      zoom reste à 1 — le jeu garde exactement son échelle d'origine. Sur un
+      téléphone elle est plus large que l'écran : on dézoome juste ce qu'il
+      faut, parce qu'esquiver ce qu'on ne voit pas n'a aucun sens. */
+  Game.prototype.computeZoom = function () {
+    const r = (this.arena && this.arena.baseRadius) || (this.diff && this.diff.arenaRadius) || 400;
+    const needed = r * 2 + 40;
+    this.zoom = Math.min(1, Math.min(this.w, this.h) / needed);
   };
 
   /* --- Persistance -------------------------------------------------------- */
@@ -115,8 +126,13 @@
     this.endless = !!(opts && opts.endless);
     this.fx.quality = (opts && opts.quality) || 'high';
     this.fx.shakeEnabled = !(opts && opts.shake === false);
+    // Pilote automatique : réservé à ce mode. Une partie jouée par le bot
+    // n'enregistre aucun record, sinon elle écraserait ceux du joueur.
+    this.botActive = !!(opts && opts.bot) && !!root.Bot;
+    if (this.botActive) root.Bot.reset();
 
     this.arena.init(this.diff, this.endless, (Math.random() * 1e9) | 0);
+    this.computeZoom();            // le rayon d'arène dépend de la difficulté
     this.player.reset();
     this.fx.reset();
     this.hazards.length = 0;
@@ -152,7 +168,9 @@
     this.fx.ring(this.player.x, this.player.y, 40, 14, '#fff', 560);
     this.audio.death();
 
-    const record = this.elapsed > this.best;
+    // Un run du bot ne peut pas battre le record : ce serait le score de la
+    // machine, pas le tien.
+    const record = !this.botActive && this.elapsed > this.best;
     if (record) { this.best = this.elapsed; this.saveBest(this.elapsed); }
     this.newRecord = record;
 
@@ -182,7 +200,14 @@
       }
     }
 
-    p.update(dt, root.Input);
+    // Le bot expose la même interface que le clavier : le joueur ne fait
+    // aucune différence, et toute la logique de déplacement reste commune.
+    if (this.botActive) {
+      root.Bot.think(this, dt);
+      p.update(dt, root.Bot);
+    } else {
+      p.update(dt, root.Input);
+    }
 
     const collapse = this.arena.update(dt, p, this.elapsed);
     if (collapse) { this.die('Effondrement de la zone — rester dehors tue.'); return; }
@@ -231,14 +256,17 @@
 
     if (this.state === 'menu') { this.drawIdleBackdrop(ctx, w, h); return; }
 
-    const camX = this.arena.camX + this.fx.shakeX;
-    const camY = this.arena.camY + this.fx.shakeY;
-    const ox = w / 2 - camX, oy = h / 2 - camY;
+    const z = this.zoom;
+    const camX = this.arena.camX + this.fx.shakeX / z;
+    const camY = this.arena.camY + this.fx.shakeY / z;
 
     ctx.save();
-    ctx.translate(ox, oy);
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(z, z);
+    ctx.translate(-camX, -camY);
 
-    const view = { x0: camX - w / 2 - 80, y0: camY - h / 2 - 80, x1: camX + w / 2 + 80, y1: camY + h / 2 + 80 };
+    const hw = (w / 2) / z + 80, hh = (h / 2) / z + 80;
+    const view = { x0: camX - hw, y0: camY - hh, x1: camX + hw, y1: camY + hh };
 
     this.arena.drawFloor(ctx, view);
     this.arena.drawBounds(ctx, view, this.elapsed);

@@ -23,9 +23,13 @@
 
   function draw(ctx, g, w, h) {
     const p = g.player, d = g.diff, o = g.objectives;
-    // Sous cette largeur, le HUD se replie : le chrono rétrécit, les colonnes
-    // latérales disparaissent et les objets remontent en haut à gauche.
-    const compact = w < 820;
+    // Le HUD se replie quand l'écran est étroit OU bas de plafond (téléphone
+    // couché) : le chrono rétrécit, les colonnes latérales disparaissent et
+    // les objets remontent sous l'en-tête.
+    const compact = w < 820 || h < 520;
+    // Les boutons tactiles occupent le coin bas-droit : la colonne de
+    // statistiques doit leur céder la place, quelle que soit la taille.
+    const touchUI = !!(root.Touch && root.Touch.isActive());
     ctx.save();
 
     /* ---- Chrono + difficulté (haut gauche) ---------------------------- */
@@ -40,6 +44,16 @@
     const ik = U.inv(1, d.intensityCap, g.director.I);
     bar(ctx, 22, 94, 168, 5, ik, d.color);
     label(ctx, 196, 99, 'INTENSITÉ ×' + g.director.I.toFixed(2), 10.5, 'rgba(200,210,240,.72)');
+
+    /* ---- Pilote automatique -------------------------------------------- */
+    if (g.botActive) {
+      const B = root.Bot;
+      label(ctx, 22, 118, compact ? 'PILOTE AUTO · hors record' : 'PILOTE AUTOMATIQUE · record désactivé',
+        10.5, '#4ade80');
+      // Jauge de menace : ce que le bot estime du danger immédiat.
+      bar(ctx, 22, 124, 120, 4, B ? B.danger : 0,
+        (B && B.danger > 0.72) ? '#ff3b30' : '#4ade80', 'rgba(74,222,128,.15)');
+    }
 
     /* ---- Record (haut droite) ------------------------------------------ */
     if (g.best > 0) {
@@ -88,7 +102,7 @@
     }
 
     /* ---- Pattern en cours (info d'apprentissage) ----------------------- */
-    if (!compact && g.lastPatternT > 0 && g.lastPattern) {
+    if (!compact && !touchUI && g.lastPatternT > 0 && g.lastPattern) {
       ctx.globalAlpha = U.clamp(g.lastPatternT / 0.6, 0, 1) * 0.75;
       label(ctx, w - 22, h - 20, g.lastPattern.toUpperCase(), 12, 'rgba(200,210,240,.9)', 'right');
       ctx.globalAlpha = 1;
@@ -146,7 +160,7 @@
     }
 
     /* ---- Statistiques discrètes (bas droite) --------------------------- */
-    if (!compact) {
+    if (!compact && !touchUI) {
       label(ctx, w - 22, h - 40, 'FRÔLEMENTS ' + g.stats.graze, 11, 'rgba(200,210,240,.5)', 'right');
     }
 
