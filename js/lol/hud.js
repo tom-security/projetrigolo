@@ -21,8 +21,7 @@
   }
 
   /** Case de sort : touche, nom, recharge. */
-  function slot(ctx, x, y, key, name, ready, cd, cdMax, color) {
-    const s = 46;
+  function slot(ctx, x, y, s, key, name, ready, cd, cdMax, color) {
     ctx.fillStyle = ready ? 'rgba(255,209,102,.16)' : 'rgba(255,255,255,.05)';
     ctx.fillRect(x, y, s, s);
     ctx.lineWidth = 2;
@@ -40,10 +39,13 @@
 
   function draw(ctx, g, w, h) {
     const p = g.player, d = g.diff, o = g.objectives;
+    // Sous cette largeur le HUD se replie : sinon le chrono percute le titre
+    // d'objectif centré et les deux colonnes basses se chevauchent.
+    const compact = w < 820;
     ctx.save();
 
     /* ---- Chrono, difficulté, intensité --------------------------------- */
-    label(ctx, 22, 50, U.fmtTime(g.elapsed), 38, '#fff');
+    label(ctx, 22, compact ? 42 : 50, U.fmtTime(g.elapsed), compact ? 26 : 38, '#fff');
     label(ctx, 22, 70, 'DODGE LoL · ' + d.name, 11.5, d.color);
     bar(ctx, 22, 80, 168, 5, U.inv(1, d.intensityCap, g.director.I), d.color);
     label(ctx, 196, 85, 'INTENSITÉ ×' + g.director.I.toFixed(2), 10.5, 'rgba(200,210,240,.72)');
@@ -99,38 +101,48 @@
     if (p.has('dash'))    slots.push(['ESP', 'Ruée', p.dashCharges > 0, p.dashCd, d.dashCd, '#4de3ff']);
     if (p.has('cleanse')) slots.push(['A', 'Purge',  p.cleanseCd <= 0, p.cleanseCd, CFG.PLAYER.cleanseCd, '#4ade80']);
     if (p.has('zhonya'))  slots.push(['E', 'Stase',  p.zhonyaCd <= 0, p.zhonyaCd, CFG.PLAYER.zhonyaCd, '#ffd166']);
-    const sw = 46, gap = 9;
+    const sw = compact ? 38 : 46, gap = compact ? 7 : 9;
+    const rowY = h - (compact ? 58 : 70);
     let sx = w / 2 - (slots.length * sw + (slots.length - 1) * gap) / 2;
     for (const s of slots) {
-      slot(ctx, sx, h - 70, s[0], s[1], s[2], s[3], s[4], s[5]);
+      slot(ctx, sx, rowY, sw, s[0], s[1], s[2], s[3], s[4], s[5]);
       sx += sw + gap;
     }
+    // Au-dessus des noms de sorts (rowY - 6), jamais sur la même ligne.
     if (p.has('dash') && p.dashMax > 1) {
-      label(ctx, w / 2, h - 78, 'CHARGES ' + p.dashCharges + '/' + p.dashMax, 10, 'rgba(200,210,240,.6)', 'center');
+      label(ctx, w / 2, rowY - 22, 'CHARGES ' + p.dashCharges + '/' + p.dashMax,
+        10, 'rgba(200,210,240,.6)', 'center');
     }
 
-    /* ---- Objets obtenus (bas gauche) ------------------------------------- */
+    /* ---- Objets obtenus --------------------------------------------------- */
+    const iw = compact ? 21 : 26, istep = compact ? 25 : 31;
+    const iy = compact ? 126 : h - 46;
     let bx = 22;
     for (const id in p.buffs) {
       const b = CFG.BUFFS[id];
+      if (bx + iw > w - 22) break;            // jamais au-delà du bord
       ctx.fillStyle = 'rgba(255,209,102,.14)';
-      ctx.fillRect(bx, h - 46, 26, 24);
+      ctx.fillRect(bx, iy, iw, 24);
       ctx.lineWidth = 1;
       ctx.strokeStyle = 'rgba(255,209,102,.45)';
-      ctx.strokeRect(bx, h - 46, 26, 24);
-      label(ctx, bx + 13, h - 29, b.icon, 13, '#ffd166', 'center');
-      bx += 31;
+      ctx.strokeRect(bx, iy, iw, 24);
+      label(ctx, bx + iw / 2, iy + 17, b.icon, compact ? 11 : 13, '#ffd166', 'center');
+      bx += istep;
     }
-    if (p.shieldUp) label(ctx, 22, h - 54, '◇ BOUCLIER DE SORTS PRÊT', 11, '#b4dcff');
+    // Le bouclier se voit déjà comme un anneau sur le champion : en compact,
+    // ce rappel texte ne vaut pas le chevauchement qu'il provoque.
+    if (p.shieldUp && !compact) label(ctx, 22, h - 54, '◇ BOUCLIER DE SORTS PRÊT', 11, '#b4dcff');
 
     /* ---- Statistiques ----------------------------------------------------- */
-    label(ctx, w - 22, h - 62, 'ESQUIVES DE JUSTESSE ' + g.stats.jukes, 11, 'rgba(200,210,240,.5)', 'right');
-    label(ctx, w - 22, h - 46, 'CC SUBIS ' + g.stats.ccTaken + '  ·  BLOQUÉS PAR SBIRE ' + g.stats.blocked,
-      11, 'rgba(200,210,240,.5)', 'right');
-    if (g.lastAbilityT > 0 && g.lastAbility) {
-      ctx.globalAlpha = U.clamp(g.lastAbilityT / 0.6, 0, 1) * 0.75;
-      label(ctx, w - 22, h - 26, g.lastAbility.toUpperCase(), 12, 'rgba(200,210,240,.9)', 'right');
-      ctx.globalAlpha = 1;
+    if (!compact) {
+      label(ctx, w - 22, h - 62, 'ESQUIVES DE JUSTESSE ' + g.stats.jukes, 11, 'rgba(200,210,240,.5)', 'right');
+      label(ctx, w - 22, h - 46, 'CC SUBIS ' + g.stats.ccTaken + '  ·  BLOQUÉS PAR SBIRE ' + g.stats.blocked,
+        11, 'rgba(200,210,240,.5)', 'right');
+      if (g.lastAbilityT > 0 && g.lastAbility) {
+        ctx.globalAlpha = U.clamp(g.lastAbilityT / 0.6, 0, 1) * 0.75;
+        label(ctx, w - 22, h - 26, g.lastAbility.toUpperCase(), 12, 'rgba(200,210,240,.9)', 'right');
+        ctx.globalAlpha = 1;
+      }
     }
 
     /* ---- État de contrôle ------------------------------------------------- */

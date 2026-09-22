@@ -23,10 +23,13 @@
 
   function draw(ctx, g, w, h) {
     const p = g.player, d = g.diff, o = g.objectives;
+    // Sous cette largeur, le HUD se replie : le chrono rétrécit, les colonnes
+    // latérales disparaissent et les objets remontent en haut à gauche.
+    const compact = w < 820;
     ctx.save();
 
     /* ---- Chrono + difficulté (haut gauche) ---------------------------- */
-    label(ctx, 22, 50, U.fmtTime(g.elapsed), 38, '#fff');
+    label(ctx, 22, compact ? 42 : 50, U.fmtTime(g.elapsed), compact ? 26 : 38, '#fff');
     label(ctx, 22, 70, 'BULLET-HELL · ' + d.name + (g.arena.endless ? ' · CARTE INFINIE' : ''), 11.5, d.color);
 
     // Intensité : montre que la difficulté monte en permanence.
@@ -81,14 +84,17 @@
     }
 
     /* ---- Pattern en cours (info d'apprentissage) ----------------------- */
-    if (g.lastPatternT > 0 && g.lastPattern) {
+    if (!compact && g.lastPatternT > 0 && g.lastPattern) {
       ctx.globalAlpha = U.clamp(g.lastPatternT / 0.6, 0, 1) * 0.75;
-      label(ctx, w - 22, h - 26, g.lastPattern.toUpperCase(), 12, 'rgba(200,210,240,.9)', 'right');
+      label(ctx, w - 22, h - 20, g.lastPattern.toUpperCase(), 12, 'rgba(200,210,240,.9)', 'right');
       ctx.globalAlpha = 1;
     }
 
-    /* ---- Dash / adrénaline (bas centre) -------------------------------- */
-    const cy = h - 34;
+    /* ---- Dash / adrénaline (bas centre) --------------------------------
+       Rythme mesuré depuis une marge basse : l'ancienne version plaçait la
+       ligne d'adrénaline à y = h, donc coupée par le bord de l'écran.       */
+    const baseY = h - 18;          // dernière ligne de texte
+    const cy = baseY - 34;         // rangée des charges de dash
     if (p.has('dash')) {
       const n = p.dashMax;
       const sw = 34, gap = 7;
@@ -108,33 +114,37 @@
     }
 
     if (p.has('adrenalin')) {
-      const bw2 = 190;
+      const bw2 = compact ? Math.min(190, w - 60) : 190;
       const ready = p.adrenalin >= 1;
-      bar(ctx, w / 2 - bw2 / 2, cy + 14, bw2, 6, p.adrenalin, ready ? '#ffd166' : '#7b8cff');
-      label(ctx, w / 2, cy + 34,
+      bar(ctx, w / 2 - bw2 / 2, baseY - 16, bw2, 6, p.adrenalin, ready ? '#ffd166' : '#7b8cff');
+      label(ctx, w / 2, baseY,
         ready ? 'ADRÉNALINE PRÊTE — [E]' : 'ADRÉNALINE ' + Math.round(p.adrenalin * 100) + '%',
         10.5, ready ? '#ffd166' : 'rgba(200,210,240,.6)', 'center');
     }
 
-    /* ---- Buffs obtenus (bas gauche) ------------------------------------ */
+    /* ---- Objets obtenus ------------------------------------------------ */
+    const iw = compact ? 21 : 26, istep = compact ? 25 : 31;
     let bx = 22;
-    const by = h - 30;
+    const by = compact ? 126 : h - 34;
     for (const id in p.buffs) {
       const b = CFG.BUFFS[id];
+      if (bx + iw > w - 22) break;            // jamais au-delà du bord
       ctx.fillStyle = 'rgba(255,209,102,.14)';
-      ctx.fillRect(bx, by - 16, 26, 24);
+      ctx.fillRect(bx, by - 16, iw, 24);
       ctx.strokeStyle = 'rgba(255,209,102,.45)';
       ctx.lineWidth = 1;
-      ctx.strokeRect(bx, by - 16, 26, 24);
-      label(ctx, bx + 13, by + 1, b.icon, 13, '#ffd166', 'center');
-      bx += 31;
+      ctx.strokeRect(bx, by - 16, iw, 24);
+      label(ctx, bx + iw / 2, by + 1, b.icon, compact ? 11 : 13, '#ffd166', 'center');
+      bx += istep;
     }
-    if (p.wind > 0) {
+    if (p.wind > 0 && !compact) {
       label(ctx, 22, by - 24, '✚ SECOND SOUFFLE ×' + p.wind, 11, '#4ade80');
     }
 
     /* ---- Statistiques discrètes (bas droite) --------------------------- */
-    label(ctx, w - 22, h - 46, 'FRÔLEMENTS ' + g.stats.graze, 11, 'rgba(200,210,240,.5)', 'right');
+    if (!compact) {
+      label(ctx, w - 22, h - 40, 'FRÔLEMENTS ' + g.stats.graze, 11, 'rgba(200,210,240,.5)', 'right');
+    }
 
     /* ---- Alerte hors limites ------------------------------------------- */
     if (p.outRatio > 0.02) {

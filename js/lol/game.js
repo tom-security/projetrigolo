@@ -98,8 +98,12 @@
     this.h = this.canvas.clientHeight || root.innerHeight;
     this.canvas.width = Math.floor(this.w * this.dpr);
     this.canvas.height = Math.floor(this.h * this.dpr);
-    // Cadrage LoL : on montre toujours la même largeur en unités de jeu.
-    this.zoom = Math.min(this.w / CFG.VIEW.unitsWide, this.h / CFG.VIEW.unitsHigh);
+    // Cadrage LoL : on montre toujours la même largeur en unités de jeu…
+    const framed = Math.min(this.w / CFG.VIEW.unitsWide, this.h / CFG.VIEW.unitsHigh);
+    // …mais sur écran étroit ou en portrait, ce calcul tombait à 0,19 et le
+    // champion ne faisait plus que 10 px. On garantit une échelle jouable,
+    // quitte à voir une portion plus petite de l'arène.
+    this.zoom = Math.max(framed, Math.min(this.w, this.h) / 1500);
   };
 
   Game.prototype.screenToWorld = function (sx, sy) {
