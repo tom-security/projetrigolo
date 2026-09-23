@@ -281,6 +281,10 @@
     this.teleMax = o.tele;
     this.life = o.life || 7;
     this.drift = o.drift || 0;          // la brèche peut glisser : il faut suivre
+    // Limite de glissement : sans elle, la brèche sortait de l'arène et le
+    // mur devenait infranchissable sans dash (mesuré en easy, pendant le
+    // défi « sans dash » : première cause de mort du bot).
+    this.gapLimit = o.gapLimit || 0;
   }
 
   Wall.prototype.update = function (dt) {
@@ -288,6 +292,10 @@
     this.x += Math.cos(this.a) * this.speed * dt;
     this.y += Math.sin(this.a) * this.speed * dt;
     this.gap += this.drift * dt;
+    if (this.gapLimit && Math.abs(this.gap) > this.gapLimit) {
+      this.gap = Math.sign(this.gap) * this.gapLimit;
+      this.drift = -this.drift;         // elle rebondit et repart vers le centre
+    }
     this.life -= dt;
     return this.life > 0;
   };

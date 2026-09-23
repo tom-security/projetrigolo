@@ -170,6 +170,7 @@
       speed: c.spd(160), half: c.arena.radius + 200,
       gap: U.rr(-c.arena.radius * 0.5, c.arena.radius * 0.5),
       gapHalf, thick: 16, tele: c.warn(0.75),
+      gapLimit: c.arena.radius * 0.6,
       life: (c.arena.radius * 2.4) / c.spd(160),
       drift: c.I > 2.5 ? U.rr(-70, 70) : 0
     }));

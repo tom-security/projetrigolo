@@ -75,37 +75,49 @@ par un bot. Il expose la même interface que le clavier (`axis` / `held` /
 `tapped`), donc le joueur ne sait pas qu'il est piloté et toute la logique de
 déplacement reste commune.
 
-C'est un **planificateur**, pas un réflexe. 60 fois par seconde il déroule
-des suites de décisions sur 0,88 s — recherche en faisceau, 13 directions par
-pas, 14 trajectoires gardées — et ne joue que le premier pas avant de
-replanifier. Le modèle de déplacement reproduit celui du joueur, accélération
-comprise : planifier avec une vitesse instantanée ferait viser des positions
-que le champion n'atteint pas. Chaque type de menace a sa propre
-extrapolation : trajectoire des projectiles, rotation des lasers, avance des
-murs et dérive de leur brèche, convergence des traqueuses.
+### Dopé à l'oracle : le bot voit l'avenir exact
 
-Trois choix de conception, chacun tranché par la mesure :
+Le bot ne devine plus où seront les dangers : **il fait tourner le vrai jeu en
+avance** (`js/forecast.js`). Plusieurs fois par seconde, il clone la partie,
+la fait avancer de 2,5 s avec le moteur lui-même, relève tout ce qui sera
+létal image par image, puis remet la partie exactement dans l'état où il l'a
+trouvée. Le générateur aléatoire du gameplay est cloné avec le reste (les
+effets visuels ont leur propre aléatoire, pour ne pas décaler les tirages) :
+le bot voit donc aussi les patterns qui ne sont **pas encore apparus**. Vérifié
+en easy, hard et infernal (jusqu'à 125 dangers) : état restauré à l'identique,
+et prévision égale à la réalité à chaque instant contrôlé.
 
-- **Le certain n'est pas escompté.** Le poids qui décroît avec l'horizon
-  modélise l'incertitude d'une extrapolation. Il est légitime pour un
-  projectile, absurde pour une explosion déjà posée au sol. Les mélanger
-  rendait le bot aveugle aux salves atterrissant vers 0,7 s.
-- **Une zone télégraphiée compte dès son apparition.** La masquer jusqu'à
-  l'approche de la détonation faisait élaguer les trajectoires de fuite
-  *avant* que le danger ne devienne visible : à la profondeur où l'explosion
-  apparaissait, tout le faisceau était déjà engagé à rester dedans. Corrigé,
-  hard est passé de 8,7 s à 14,6 s de survie moyenne sur 8 runs.
-- **Le score est continu**, avec une pénalité au carré sous la marge de
-  sécurité. Une sentinelle « condamné » à valeur fixe rendait toutes les
-  options mauvaises équivalentes : le bot choisissait au hasard au lieu de la
-  moins pire.
+Trois étages s'appuient sur cette prévision :
 
-Le dash est déclenché sur la marge du **court terme** (0,22 s), pas sur le
-pire du plan entier : ce dernier est bien trop pessimiste et faisait dasher en
-permanence.
+1. **Un planificateur** en faisceau (13 directions, 12 trajectoires gardées,
+   horizon 2,4 s, fin devant, grossier derrière), avec la physique exacte du
+   joueur. Chaque point du plan est aussi jugé contre l'état du monde 0,45 s
+   plus tard : sans ce regard en avant, rester sous une bombe annoncée paraît
+   confortable jusqu'à l'explosion, et les fuites sont élaguées trop tôt.
+2. **Une carte de survie espace-temps** : pour chaque case de l'arène et
+   chaque instant, jusqu'à quand on peut tenir en partant de là. Elle est
+   calculée de façon exhaustive, donc aucune issue ne peut être élaguée, et
+   elle sert de boussole au faisceau.
+3. **Une vérification dans le vrai moteur.** Quand un danger approche, les
+   meilleurs plans du faisceau, des fuites en ligne droite et leurs variantes
+   avec dash sont rejoués dans le jeu réel. Le bot garde celui qui survit le
+   plus longtemps, puis celui qui a la plus grande marge. Les tirs visés, la
+   bombe posée sur sa trajectoire, le dash et le sursis hors de l'arène y
+   sont exacts par construction. Au calme, ces rejeux sont sautés : ce sont
+   eux qui coûtent le plus.
 
-Survie mesurée : easy ~55 s (1 à 2 objectifs validés à chaque run) · medium
-~24 s · hard ~15,7 s · ultra ~6 s · infernal ~4 s (rayon des bombes à 50 px).
+Résultat en **easy** (12 runs de 240 s) : **10 runs menées au bout**, dont 5
+avec les 6 objectifs. Dans les 5 autres, le bot a dashé en dernier recours
+pendant le défi « sans dash » : rater le défi coûte une vague de punition,
+mourir coûte la run. Avant l'oracle : ~55 s de survie en moyenne, aucune run
+menée au bout sur 24.
+
+En le développant, un **défaut du jeu** est apparu : la brèche des murs qui
+glisse pouvait sortir de l'arène. Pendant le défi « sans dash », le mur
+devenait alors infranchissable. La brèche rebondit désormais à 60 % du rayon.
+
+Sans `forecast.js`, le bot retombe sur son ancien modèle analytique des
+dangers.
 
 ### Infernal : séparer la machine de l'humain
 
@@ -156,7 +168,8 @@ ailleurs au moment où une bombe allait apparaître, ce qu'aucun joueur réel ne
 peut savoir. Le plafond d'un joueur qui ne voit que ce qui existe est bien
 plus bas.
 
-Il respecte aussi le défi en cours : il ne dashe pas pendant « sans dash »,
+Il respecte aussi le défi en cours : il ne dashe pas pendant « sans dash »
+(sauf pour éviter une mort certaine),
 reste au centre pendant « rester au centre », et va chercher le frôlement
 pendant le défi de frôlement.
 

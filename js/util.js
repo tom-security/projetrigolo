@@ -55,7 +55,24 @@
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
 
-  const rnd = Math.random;
+  /* Aléatoire du GAMEPLAY : un mulberry32 dont on peut lire et remettre
+     l'état. C'est ce qui permet au bot de rejouer l'avenir exact d'une
+     partie (voir forecast.js) : cloner l'état du monde ne suffit pas si le
+     prochain tirage, lui, ne se clone pas. */
+  let rngState = ((Math.random() * 4294967296) >>> 0) || 1;
+  function rnd() {
+    rngState = (rngState + 0x6D2B79F5) | 0;
+    let t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function rngGet() { return rngState; }
+  function rngSet(s) { rngState = s | 0; }
+  /** Aléatoire VISUEL (particules, tremblement) : jamais le générateur du
+      gameplay, sinon l'affichage décalerait les tirages et l'avenir prévu
+      par le bot ne serait plus celui qui arrive. */
+  function vrr(a, b) { return a + Math.random() * (b - a); }
+
   function rr(a, b) { return a + rnd() * (b - a); }
   function ri(a, b) { return Math.floor(a + rnd() * (b - a + 1)); }
   function pick(arr) { return arr[(rnd() * arr.length) | 0]; }
@@ -112,6 +129,7 @@
     TAU, clamp, lerp, inv, smooth, approach,
     len, dist, dist2, angDelta, distToSeg,
     makeRng, hash2, rr, ri, pick, chance, shuffle, weighted,
+    rngGet, rngSet, vrr,
     fmtTime, glow, rgba
   };
 })(window);
