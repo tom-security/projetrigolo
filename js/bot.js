@@ -5,46 +5,71 @@
    donc le joueur ne sait pas qu'il est piloté : game.js lui passe le bot à la
    place du clavier, et rien d'autre ne change.
 
-   Méthode : à chaque décision on échantillonne des directions, on simule la
-   position du joueur à plusieurs horizons, et on estime la distance au danger
-   le plus proche À CE MOMENT-LÀ — pas maintenant. Esquiver un projectile
-   demande de savoir où il sera, pas où il est.
+   MÉTHODE — recherche en faisceau sur des séquences d'actions.
+   Une version antérieure choisissait gloutonnement la meilleure direction
+   pour l'instant suivant. Mesuré contre un oracle (propagation de toutes les
+   positions atteignables), ce glouton mourait à 1,8 s en infernal là où une
+   trajectoire survivante existait jusqu'à 8,5 s : le problème n'était pas la
+   réaction mais l'absence de plan. On déroule donc des suites de décisions,
+   on garde les meilleures, et on ne joue que le premier pas.
+
+   Le modèle de déplacement reproduit celui du joueur, accélération comprise :
+   planifier avec une vitesse instantanée ferait viser des positions que le
+   champion n'atteint pas.
 
    Ce bot ne fonctionne PAS en mode LoL : là-bas on ne se déplace pas par
    direction mais par ordre de clic, et la visée ennemie réagit à cet ordre.
-   C'est une autre mécanique, qui demanderait un autre pilote.
    ========================================================================== */
 (function (root) {
   'use strict';
   const U = root.U, CFG = root.CFG;
 
-  const DIRS = 24;                  // directions testées
-  const HORIZONS = [0.10, 0.26, 0.46, 0.72];
-  const DECIDE_HZ = 60;             // fréquence de décision (le jeu tourne à 120)
-  const SCAN_RADIUS = 520;          // au-delà, un danger ne concerne pas la frame
+  /* --- Réglages de recherche -------------------------------------------- */
+  const SEG = 0.11;                 // durée d'une décision dans le plan
+  const DEPTH = 8;                  // profondeur → horizon 0.88 s
+  const BEAM = 14;                  // largeur du faisceau
+  const SUBSTEPS = 2;               // intégrations par segment (anti-tunnel)
+  const DECIDE_HZ = 60;             // replanification par seconde
+  const SCAN_RADIUS = 620;
   const SAFE = 26;                  // marge visée au-delà du hitbox, en pixels
+
+  // Directions candidates : 12 autour + l'immobilité.
+  const BRANCH = [];
+  for (let i = 0; i < 12; i++) BRANCH.push([Math.cos(i / 12 * U.TAU), Math.sin(i / 12 * U.TAU)]);
+  BRANCH.push([0, 0]);
+
+  /* --- Types de danger, figés une fois par décision ----------------------
+     `instanceof` dans la boucle chaude coûte cher : on étiquette une fois. */
+  const K_BULLET = 0, K_BLAST = 1, K_LASER = 2, K_WALL = 3, K_CHASER = 4, K_OTHER = 5;
+
+  function tagOf(hz) {
+    const E = root.Ent;
+    if (hz instanceof E.Bullet) return K_BULLET;
+    if (hz instanceof E.Blast) return K_BLAST;
+    if (hz instanceof E.Laser) return K_LASER;
+    if (hz instanceof E.Wall) return K_WALL;
+    if (hz instanceof E.Chaser) return K_CHASER;
+    return K_OTHER;
+  }
 
   const bot = {
     enabled: false,
     ax: 0, ay: 0,
-    wantDash: false,
-    wantAdren: false,
-    wantFocus: false,
+    wantDash: false, wantAdren: false, wantFocus: false,
     acc: 0,
-    danger: 0,                      // 0..1, sert au HUD
-    // Marge sous laquelle le bot dashe. Valeur choisie par comparaison sur
-    // 5 runs par réglage : dasher tôt bat largement dasher acculé
-    // (hard : 8,6 s → 15,1 s de survie moyenne). Réglable à chaud.
+    danger: 0,
     dashAt: SAFE * 0.85,
-    near: [],
+    near: [],                       // dangers mobiles (extrapolés)
+    stat: [],                       // explosions posées (géométrie certaine)
+    planCost: 0,                    // ms de la dernière décision, pour diagnostic
     reset() {
       this.ax = this.ay = 0;
       this.wantDash = this.wantAdren = this.wantFocus = false;
-      this.acc = 0; this.danger = 0; this.near.length = 0;
+      this.acc = 0; this.danger = 0; this.planCost = 0;
+      this.near.length = 0; this.stat.length = 0;
     }
   };
 
-  /* --- Interface identique à celle du clavier ---------------------------- */
   bot.axis = function () { return { x: this.ax, y: this.ay }; };
   bot.held = function (a) { return a === 'focus' ? this.wantFocus : false; };
   bot.tapped = function (a) {
@@ -54,66 +79,77 @@
   };
 
   /* ======================================================================
-     Distance au danger `hz` depuis (x, y), tel qu'il sera dans `t` secondes.
-     Renvoie une distance à la surface ; négatif = touché.
+     Distance au danger `h`, depuis (x, y), tel qu'il sera dans `t` secondes.
+     Négatif = touché. `h` porte son étiquette de type dans h.__k.
      ====================================================================== */
-  function clearance(hz, x, y, t, game) {
-    const E = root.Ent;
+  function clearance(h, x, y, t) {
+    switch (h.__k) {
 
-    // --- Projectile : extrapolation linéaire -----------------------------
-    if (hz instanceof E.Bullet) {
-      if (hz.delay > t) return 1e6;                 // pas encore apparu
-      const bx = hz.x + hz.vx * t, by = hz.y + hz.vy * t;
-      // Une trajectoire courbe ou traquante s'écarte de la droite : on
-      // élargit le projectile plutôt que de simuler, c'est moins cher et
-      // ça penche du bon côté (prudence).
-      const drift = (Math.abs(hz.curve) + hz.homing) * t * 60;
-      return Math.hypot(x - bx, y - by) - hz.r - drift;
+      case K_BULLET: {
+        if (h.delay > t) return 1e6;
+        const bx = h.x + h.vx * t, by = h.y + h.vy * t;
+        // Trajectoire courbe ou traquante : on élargit le projectile plutôt
+        // que de la simuler — moins cher, et l'erreur penche vers la prudence.
+        const drift = h.__drift * t;
+        return Math.hypot(x - bx, y - by) - h.r - drift;
+      }
+
+      case K_BLAST: {
+        // Une zone télégraphiée compte dès son apparition, sans masquage.
+        //
+        // Les versions précédentes la rendaient invisible tant que la
+        // détonation n'approchait pas. Le faisceau élaguait alors les
+        // trajectoires de fuite AVANT que le danger ne devienne visible : à
+        // la profondeur où l'explosion apparaissait enfin, tous les nœuds
+        // survivants étaient déjà engagés à rester dedans. D'où des morts au
+        // même instant à chaque partie, sur la première salve.
+        //
+        // Y rester n'est jamais bon de toute façon : la vraie distance suffit.
+        return Math.hypot(x - h.x, y - h.y) - h.r;
+      }
+
+      case K_LASER: {
+        if (h.state === 'tele' && t < h.tele - 0.12) return 1e6;
+        const a = h.a + h.spin * t;
+        return U.distToSeg(x, y, h.x, h.y,
+          h.x + Math.cos(a) * h.len, h.y + Math.sin(a) * h.len) - h.w * 0.5;
+      }
+
+      case K_WALL: {
+        if (h.tele > t) return 1e6;
+        const px = h.x + h.__cx * h.speed * t, py = h.y + h.__cy * h.speed * t;
+        const tx = -h.__cy, ty = h.__cx;
+        const gap = h.gap + h.drift * t;
+        return Math.min(
+          U.distToSeg(x, y, px + tx * -h.half, py + ty * -h.half,
+                            px + tx * (gap - h.gapHalf), py + ty * (gap - h.gapHalf)),
+          U.distToSeg(x, y, px + tx * (gap + h.gapHalf), py + ty * (gap + h.gapHalf),
+                            px + tx * h.half, py + ty * h.half)
+        ) - h.thick * 0.5;
+      }
+
+      case K_CHASER: {
+        if (h.tele > t) return 1e6;
+        const a = Math.atan2(y - h.y, x - h.x);   // au pire elle vise juste
+        return Math.hypot(x - (h.x + Math.cos(a) * h.speed * t),
+                          y - (h.y + Math.sin(a) * h.speed * t)) - h.r;
+      }
+
+      default: {
+        const d = h.edge ? h.edge(x, y) : 1e6;
+        return d < 0 ? 1e6 : d;
+      }
     }
+  }
 
-    // --- Explosion : dangereuse du télégraphe à la fin de la persistance --
-    if (hz instanceof E.Blast) {
-      const d = Math.hypot(x - hz.x, y - hz.y) - hz.r;
-      if (hz.state === 'boom') return d;
-      // En télégraphe : létale un peu avant la détonation, pour avoir le
-      // temps d'en sortir plutôt que d'y être encore au moment du boum.
-      return (t >= hz.tele - 0.18) ? d : Math.max(d, 0.001);
+  /** Distance au danger le plus proche, tous dangers confondus. */
+  function minClear(near, x, y, t) {
+    let c = 1e6;
+    for (let i = 0; i < near.length; i++) {
+      const d = clearance(near[i], x, y, t);
+      if (d < c) { c = d; if (c < -40) break; }   // déjà largement touché
     }
-
-    // --- Laser : le faisceau tourne, on projette son angle ---------------
-    if (hz instanceof E.Laser) {
-      const a = hz.a + hz.spin * t;
-      if (hz.state === 'tele' && t < hz.tele - 0.12) return 1e6;
-      const ex = hz.x + Math.cos(a) * hz.len, ey = hz.y + Math.sin(a) * hz.len;
-      return U.distToSeg(x, y, hz.x, hz.y, ex, ey) - hz.w * 0.5;
-    }
-
-    // --- Mur : il avance, et sa brèche peut dériver ----------------------
-    if (hz instanceof E.Wall) {
-      if (hz.tele > t) return 1e6;
-      const px = hz.x + Math.cos(hz.a) * hz.speed * t;
-      const py = hz.y + Math.sin(hz.a) * hz.speed * t;
-      const tx = -Math.sin(hz.a), ty = Math.cos(hz.a);
-      const gap = hz.gap + hz.drift * t;
-      const a1x = px + tx * -hz.half, a1y = py + ty * -hz.half;
-      const b1x = px + tx * (gap - hz.gapHalf), b1y = py + ty * (gap - hz.gapHalf);
-      const a2x = px + tx * (gap + hz.gapHalf), a2y = py + ty * (gap + hz.gapHalf);
-      const b2x = px + tx * hz.half, b2y = py + ty * hz.half;
-      return Math.min(U.distToSeg(x, y, a1x, a1y, b1x, b1y),
-                      U.distToSeg(x, y, a2x, a2y, b2x, b2y)) - hz.thick * 0.5;
-    }
-
-    // --- Traqueuse : elle vient vers nous, on la fait avancer vers nous ---
-    if (hz instanceof E.Chaser) {
-      if (hz.tele > t) return 1e6;
-      const a = Math.atan2(y - hz.y, x - hz.x);     // au pire elle vise juste
-      const cx = hz.x + Math.cos(a) * hz.speed * t;
-      const cy = hz.y + Math.sin(a) * hz.speed * t;
-      return Math.hypot(x - cx, y - cy) - hz.r;
-    }
-
-    const d = hz.edge ? hz.edge(x, y) : 1e6;
-    return d < 0 ? 1e6 : d;                          // inconnu et inactif
+    return c;
   }
 
   /* ======================================================================
@@ -123,117 +159,162 @@
     this.acc += dt;
     if (this.acc < 1 / DECIDE_HZ) return;
     this.acc = 0;
+    const t0 = performance.now();
 
     const p = game.player, A = game.arena;
     const hb = CFG.PLAYER.hitbox;
     const speed = game.diff.playerSpeed * p.speedMul;
+    const accel = CFG.PLAYER.accel, friction = CFG.PLAYER.friction;
 
-    // --- On ne raisonne que sur ce qui peut nous atteindre --------------
+    /* --- Dangers pertinents, étiquetés une fois --------------------------
+       On sépare le MOBILE du CERTAIN. Le poids qui décroît avec l'horizon
+       modélise l'incertitude de prédiction : légitime pour un projectile
+       qu'on extrapole, absurde pour une explosion déjà posée au sol dont on
+       connaît le centre, le rayon et l'instant exact. Les mélanger rendait le
+       bot aveugle aux salves atterrissant vers 0,7 s — sa première cause de
+       mort. */
     const near = this.near;
-    near.length = 0;
+    const stat = this.stat;
+    near.length = 0; stat.length = 0;
     const R2 = SCAN_RADIUS * SCAN_RADIUS;
     for (let i = 0; i < game.hazards.length; i++) {
-      const hz = game.hazards[i];
-      const dx = (hz.x !== undefined ? hz.x : p.x) - p.x;
-      const dy = (hz.y !== undefined ? hz.y : p.y) - p.y;
+      const h = game.hazards[i];
+      const k = tagOf(h);
       // Lasers et murs sont longs : leur origine peut être loin sans qu'ils
-      // cessent de nous menacer. On ne les filtre pas sur la distance.
-      if (hz instanceof root.Ent.Laser || hz instanceof root.Ent.Wall ||
-          dx * dx + dy * dy < R2) near.push(hz);
+      // cessent de menacer. On ne les filtre pas sur la distance.
+      if (k !== K_LASER && k !== K_WALL) {
+        const dx = (h.x !== undefined ? h.x : p.x) - p.x;
+        const dy = (h.y !== undefined ? h.y : p.y) - p.y;
+        if (dx * dx + dy * dy > R2) continue;
+      }
+      h.__k = k;
+      if (k === K_BULLET) h.__drift = (Math.abs(h.curve) + h.homing) * 60;
+      if (k === K_WALL) { h.__cx = Math.cos(h.a); h.__cy = Math.sin(h.a); }
+      (k === K_BLAST ? stat : near).push(h);
     }
 
-    // --- Contraintes venant du défi en cours ----------------------------
+    /* --- Contraintes du défi en cours ------------------------------------ */
     const ch = game.objectives && game.objectives.activeChallenge;
     const noDash = !!(ch && ch.cond === 'nodash');
     const keepInner = !!(ch && ch.cond === 'inner');
     const wantGraze = !!(ch && ch.cond === 'graze');
     const innerR = A.innerRadius ? A.innerRadius() : A.radius * 0.42;
+    const edgeR = A.radius - hb - 18;
 
-    let bestA = null, bestScore = -Infinity, bestClear = -1e6;
-    let stayScore = -Infinity, stayClear = -1e6;
+    /* --- Évaluation d'un point du plan ----------------------------------- */
+    function evalPoint(x, y, t, weight) {
+      let s = 0;
+      const dc = Math.hypot(x - A.cx, y - A.cy);
+      const over = dc - edgeR;
+      if (over > 0) s -= 4000 + over * 40;        // pénalité forte mais continue
+      s -= dc * 0.35;                              // le centre garde des issues
+      if (keepInner) s -= Math.max(0, dc - innerR * 0.88) * 8;
 
-    for (let i = 0; i <= DIRS; i++) {
-      // i === DIRS teste l'immobilité : parfois c'est la bonne réponse.
-      const moving = i < DIRS;
-      const ang = moving ? (i / DIRS) * U.TAU : 0;
-      const cx = moving ? Math.cos(ang) : 0, cy = moving ? Math.sin(ang) : 0;
-
-      let score = 0, minClear = 1e6;
-
-      for (let h = 0; h < HORIZONS.length; h++) {
-        const t = HORIZONS[h];
-        const px = p.x + cx * speed * t;
-        const py = p.y + cy * speed * t;
-        const weight = 1.5 - h * 0.28;   // l'incertitude croît avec l'horizon
-
-        // Sortir de l'arène tue. Pénalité forte mais CONTINUE : quand tout
-        // est mauvais, il faut encore pouvoir classer les options.
-        const dc = Math.hypot(px - A.cx, py - A.cy);
-        const over = dc - (A.radius - hb - 18);
-        if (over > 0) score -= 4000 + over * 40;
-        // Légère préférence pour le centre : plus d'échappatoires ensuite.
-        score -= dc * 0.35;
-        if (keepInner) score -= Math.max(0, dc - innerR * 0.88) * 8;
-
-        let c = 1e6;
-        for (let k = 0; k < near.length; k++) {
-          const d = clearance(near[k], px, py, t, game);
-          if (d < c) c = d;
-        }
-        c -= hb;
-        if (c < minClear) minClear = c;
-
-        // Le cœur du classement. Sous la marge de sécurité, la pénalité
-        // croît au carré : frôler coûte un peu, se faire toucher coûte tout,
-        // et entre les deux l'ordre reste exploitable.
-        if (c < SAFE) {
-          const deficit = SAFE - c;
-          score -= deficit * deficit * 2.2 * weight;
-        }
-        score += Math.min(Math.max(c, 0), 240) * weight;
+      // Mobile : extrapolé, donc escompté avec l'horizon.
+      const cm = minClear(near, x, y, t) - hb;
+      if (cm < SAFE) {
+        const d = SAFE - cm;
+        s -= d * d * 2.2 * weight;                 // frôler coûte, toucher coûte tout
       }
+      s += Math.min(Math.max(cm, 0), 240) * weight;
 
-      // Frôler charge l'adrénaline, mais c'est un mauvais échange hors du
-      // défi : mesuré, l'incitation permanente faisait chuter la survie en
-      // easy de 56 s à 30 s de moyenne pour un gain nul ailleurs. Le bot ne
-      // s'approche donc que lorsque l'objectif l'exige.
-      if (wantGraze && minClear > SAFE) {
-        score -= Math.abs(minClear - (SAFE + 16)) * 1.6;
+      // Certain : géométrie et instant connus, aucun escompte.
+      const cs = minClear(stat, x, y, t) - hb;
+      if (cs < SAFE) {
+        const d = SAFE - cs;
+        s -= d * d * 2.2;
       }
+      s += Math.min(Math.max(cs, 0), 240);
 
-      if (!moving) { stayScore = score; stayClear = minClear; }
-      if (score > bestScore) { bestScore = score; bestA = ang; bestClear = minClear; }
+      const c = cm < cs ? cm : cs;
+      if (wantGraze && c > SAFE) s -= Math.abs(c - (SAFE + 16)) * 1.6 * weight;
+      return { s, c };
     }
 
-    // « Piégé » = même la meilleure option laisse passer sous la marge.
+    /* --- Recherche en faisceau -------------------------------------------- */
+    let beam = [{
+      x: p.x, y: p.y, vx: p.vx, vy: p.vy,
+      score: 0, worst: 1e6, early: 1e6,
+      firstI: -1, firstX: 0, firstY: 0
+    }];
+    const sub = SEG / SUBSTEPS;
+
+    for (let d = 0; d < DEPTH; d++) {
+      const weight = 1.8 * Math.pow(0.72, d);      // le proche pèse plus que le lointain
+      const kids = [];
+
+      for (let bi = 0; bi < beam.length; bi++) {
+        const node = beam[bi];
+        for (let di = 0; di < BRANCH.length; di++) {
+          const dirX = BRANCH[di][0], dirY = BRANCH[di][1];
+          const moving = dirX !== 0 || dirY !== 0;
+          const acc = moving ? accel : friction;
+
+          // Intégration identique à celle du joueur : sans elle, le plan
+          // viserait des positions que le champion n'atteint pas à temps.
+          let x = node.x, y = node.y, vx = node.vx, vy = node.vy;
+          let score = node.score, worst = node.worst, early = node.early;
+
+          for (let k = 0; k < SUBSTEPS; k++) {
+            vx = U.approach(vx, dirX * speed, acc * sub);
+            vy = U.approach(vy, dirY * speed, acc * sub);
+            x += vx * sub; y += vy * sub;
+            const t = d * SEG + (k + 1) * sub;
+            const e = evalPoint(x, y, t, weight);
+            score += e.s;
+            if (e.c < worst) worst = e.c;
+            // Marge du court terme, gardée à part : c'est elle qui décide du
+            // dash. Le pire de tout le plan est bien trop pessimiste pour ça.
+            if (d < 2) {
+              if (e.c < early) early = e.c;
+              // Veto : aucune promesse lointaine ne rachète un frôlement
+              // mortel maintenant.
+              if (e.c < 6) score -= 50000;
+            }
+          }
+
+          kids.push({
+            x, y, vx, vy, score, worst, early,
+            firstI: node.firstI < 0 ? di : node.firstI,
+            firstX: node.firstI < 0 ? dirX : node.firstX,
+            firstY: node.firstI < 0 ? dirY : node.firstY
+          });
+        }
+      }
+
+      kids.sort((a, b) => b.score - a.score);
+
+      // Diversité : sans quota, les meilleurs descendants viennent tous du
+      // même parent et le faisceau ne compare plus qu'une seule ouverture.
+      const perFirst = new Int8Array(BRANCH.length);
+      const kept = [];
+      for (let i = 0; i < kids.length && kept.length < BEAM; i++) {
+        const f = kids[i].firstI;
+        if (perFirst[f] >= 2) continue;
+        perFirst[f]++;
+        kept.push(kids[i]);
+      }
+      beam = kept;
+    }
+
+    const best = beam[0];
+    this.ax = best.firstX; this.ay = best.firstY;
+    const bestClear = best.early;
     const trapped = bestClear < 4;
-
-    // --- Sortie de décision ---------------------------------------------
-    // L'immobilité ne gagne que si elle est au moins aussi sûre : à score
-    // égal, bouger garde l'initiative.
-    if (bestA === null || (stayScore >= bestScore && stayClear >= bestClear)) {
-      this.ax = this.ay = 0;
-    } else {
-      this.ax = Math.cos(bestA); this.ay = Math.sin(bestA);
-    }
-
     this.danger = U.clamp(1 - bestClear / 160, 0, 1);
 
-    // --- Dash : l'invincibilité doit partir AVANT l'impact ---------------
-    // Attendre d'être acculé, c'est dasher une frame trop tard. On part dès
-    // que la meilleure trajectoire passe sous la marge de sécurité.
-    this.wantDash = !noDash && p.has('dash') && p.dashCharges > 0 &&
-                    bestClear < this.dashAt;
-    if (this.wantDash && bestA !== null) { this.ax = Math.cos(bestA); this.ay = Math.sin(bestA); }
+    /* --- Sorts -------------------------------------------------------------- */
+    // Le dash part AVANT l'impact : attendre d'être acculé, c'est dasher une
+    // frame trop tard (mesuré : survie moyenne 8,6 s → 15,1 s en hard).
+    this.wantDash = !noDash && p.has('dash') && p.dashCharges > 0 && bestClear < this.dashAt;
 
-    // --- Adrénaline : ralentir le monde dès que ça se tend ---------------
-    // La jauge se recharge en frôlant : la garder pleine ne rapporte rien,
-    // la dépenser tôt évite la situation sans issue.
-    this.wantAdren = p.has('adrenalin') && p.adrenalin >= 1 &&
-                     p.slowT <= 0 && (trapped || this.danger > 0.45);
+    // L'adrénaline se recharge en frôlant : la garder pleine ne rapporte rien.
+    this.wantAdren = p.has('adrenalin') && p.adrenalin >= 1 && p.slowT <= 0 &&
+                     (trapped || this.danger > 0.45);
 
-    // --- Focus : uniquement pour frôler proprement -----------------------
     this.wantFocus = wantGraze && p.has('focus') && !trapped && this.danger < 0.5;
+
+    this.planCost = performance.now() - t0;
   };
 
   root.Bot = bot;

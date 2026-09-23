@@ -75,18 +75,57 @@ par un bot. Il expose la même interface que le clavier (`axis` / `held` /
 `tapped`), donc le joueur ne sait pas qu'il est piloté et toute la logique de
 déplacement reste commune.
 
-À chaque décision (60 fois par seconde) il échantillonne 24 directions plus
-l'immobilité, simule sa position à quatre horizons (0,10 / 0,26 / 0,46 /
-0,72 s) et estime la distance au danger le plus proche **à ce moment-là** —
-pas maintenant. Chaque type de menace a sa propre extrapolation : trajectoire
-des projectiles, rotation des lasers, avance des murs et dérive de leur
-brèche, convergence des traqueuses, et pour les explosions la fenêtre complète
-du télégraphe à la fin de la persistance.
+C'est un **planificateur**, pas un réflexe. 60 fois par seconde il déroule
+des suites de décisions sur 0,88 s — recherche en faisceau, 13 directions par
+pas, 14 trajectoires gardées — et ne joue que le premier pas avant de
+replanifier. Le modèle de déplacement reproduit celui du joueur, accélération
+comprise : planifier avec une vitesse instantanée ferait viser des positions
+que le champion n'atteint pas. Chaque type de menace a sa propre
+extrapolation : trajectoire des projectiles, rotation des lasers, avance des
+murs et dérive de leur brèche, convergence des traqueuses.
 
-Le score est **continu** : sous la marge de sécurité la pénalité croît au
-carré. C'est essentiel — avec une sentinelle « condamné » à valeur fixe, toutes
-les options mauvaises devenaient équivalentes et le bot en choisissait une au
-hasard au lieu de la moins pire.
+Trois choix de conception, chacun tranché par la mesure :
+
+- **Le certain n'est pas escompté.** Le poids qui décroît avec l'horizon
+  modélise l'incertitude d'une extrapolation. Il est légitime pour un
+  projectile, absurde pour une explosion déjà posée au sol. Les mélanger
+  rendait le bot aveugle aux salves atterrissant vers 0,7 s.
+- **Une zone télégraphiée compte dès son apparition.** La masquer jusqu'à
+  l'approche de la détonation faisait élaguer les trajectoires de fuite
+  *avant* que le danger ne devienne visible : à la profondeur où l'explosion
+  apparaissait, tout le faisceau était déjà engagé à rester dedans. Corrigé,
+  hard est passé de 8,7 s à 14,6 s de survie moyenne sur 8 runs.
+- **Le score est continu**, avec une pénalité au carré sous la marge de
+  sécurité. Une sentinelle « condamné » à valeur fixe rendait toutes les
+  options mauvaises équivalentes : le bot choisissait au hasard au lieu de la
+  moins pire.
+
+Le dash est déclenché sur la marge du **court terme** (0,22 s), pas sur le
+pire du plan entier : ce dernier est bien trop pessimiste et faisait dasher en
+permanence.
+
+Survie mesurée : easy ~55 s (1 à 2 objectifs validés à chaque run) · medium
+~24 s · hard ~15,7 s · ultra ~6 s · infernal ~2 s.
+
+### Pourquoi le bot ne passe pas infernal
+
+Ce n'est plus une question d'intelligence, c'est de la physique. Une bombe
+qui vise le joueur laisse 295 ms de préavis ; il faut sortir d'un disque de
+117 à 137 px ; or en partant de l'arrêt, avec l'accélération du jeu, on
+parcourt **64 px** dans ce délai. Il manque au moins 53 px. Aucun algorithme
+ne comble ça.
+
+| | Préavis | À parcourir | Parcouru depuis l'arrêt |
+|---|---|---|---|
+| hard | 842 ms | 101–119 px | 208 px |
+| ultra | 579 ms | 108–127 px | 137 px |
+| infernal | 295 ms | 117–137 px | **64 px** |
+
+Un oracle qui propage toutes les positions atteignables survit jusqu'à ~8,5 s
+en infernal — mais il est **clairvoyant** : il suppose qu'on se trouvait déjà
+ailleurs au moment où une bombe allait apparaître, ce qu'aucun joueur réel ne
+peut savoir. Le plafond d'un joueur qui ne voit que ce qui existe est bien
+plus bas.
 
 Il respecte aussi le défi en cours : il ne dashe pas pendant « sans dash »,
 reste au centre pendant « rester au centre », et va chercher le frôlement
