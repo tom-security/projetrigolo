@@ -112,6 +112,9 @@
     this.state = 'tele';
     this.t = 0;
     this.grow = o.grow || 0;            // le rayon peut enfler pendant l'explosion
+    // Plancher d'avertissement de la difficulté, transmis aux répliques : elles
+    // naissent ici, hors du directeur, et échappaient sinon au plancher.
+    this.floor = o.floor || 0;
   }
 
   Blast.prototype.update = function (dt, game) {
@@ -138,9 +141,12 @@
             x: this.x + Math.cos(a) * d,
             y: this.y + Math.sin(a) * d,
             r: this.r * 0.62,
-            tele: Math.max(0.18, this.teleMax * 0.55),
+            // Le minimum de 180 ms passait sous le plancher de 200 ms
+            // d'infernal ; le plancher de la difficulté prime désormais.
+            tele: Math.max(0.18, this.floor, this.teleMax * 0.55),
             linger: this.lingerMax * 0.6,
             secondary: 0,
+            floor: this.floor,
             c: '#ff5a3d'
           }));
         }

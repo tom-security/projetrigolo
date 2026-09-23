@@ -118,6 +118,7 @@
           y = c.arena.cy + Math.sin(a) * d;
         }
         push(c, new E.Blast({
+          floor: c.warnAoe(0),
           x, y, r: A.radius * U.rr(0.85, 1.15),
           tele, linger, secondary: A.secondary,
           c: '#ff8a3d', grow: c.diff.id === 'infernal' ? 22 : 0
@@ -207,7 +208,11 @@
           push(c, new E.Bullet({
             x: o.x + Math.cos(a) * HUB, y: o.y + Math.sin(a) * HUB,
             vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-            r: 6.5, c: '#7b8cff', life: 8
+            r: 6.5, c: '#7b8cff', life: 8,
+            // Née à ≥ 98 px du joueur, mais à la vitesse d'infernal le contact
+            // tombait à ~199 ms, juste sous le plancher. warn(0) le garantit,
+            // et reste nul hors infernal.
+            delay: c.warn(0)
           }));
         }
       });
@@ -311,6 +316,7 @@
       c.sched(i * 0.16, () => {
         const t = (i / (steps - 1) - 0.5) * c.arena.radius * 1.9;
         push(c, new E.Blast({
+          floor: c.warnAoe(0),
           x: c.arena.cx + nx * t + U.rr(-40, 40),
           y: c.arena.cy + ny * t + U.rr(-40, 40),
           r: A.radius * 0.8, tele, linger: linger * 0.75,
@@ -354,7 +360,11 @@
             x: c.arena.cx + Math.cos(a) * HUB, y: c.arena.cy + Math.sin(a) * HUB,
             vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
             r: 6, c: L % 2 ? '#ff3b6b' : '#4de3ff',
-            curve: (L % 2 ? 1 : -1) * 0.55, life: 9
+            curve: (L % 2 ? 1 : -1) * 0.55, life: 9,
+            // Ils naissent autour du centre, pas loin du joueur : sans préavis
+            // ils pouvaient apparaître sur lui. warn(0) applique le plancher
+            // de la difficulté, et reste nul ailleurs qu'en infernal.
+            delay: c.warn(0)
           }));
         }
       });
@@ -394,6 +404,7 @@
         const a = off + (i / n) * U.TAU;
         c.sched(ring * 0.12, () => {
           push(c, new E.Blast({
+          floor: c.warnAoe(0),
             x: c.arena.cx + Math.cos(a) * rad,
             y: c.arena.cy + Math.sin(a) * rad,
             r: A.radius * 0.75, tele, linger,

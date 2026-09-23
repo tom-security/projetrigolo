@@ -105,21 +105,45 @@ pire du plan entier : ce dernier est bien trop pessimiste et faisait dasher en
 permanence.
 
 Survie mesurée : easy ~55 s (1 à 2 objectifs validés à chaque run) · medium
-~24 s · hard ~15,7 s · ultra ~6 s · infernal ~2 s.
+~24 s · hard ~15,7 s · ultra ~6 s · infernal ~4 s (rayon des bombes à 50 px).
 
-### Pourquoi le bot ne passe pas infernal
+### Infernal : séparer la machine de l'humain
 
-Ce n'est plus une question d'intelligence, c'est de la physique. Une bombe
-qui vise le joueur laisse 295 ms de préavis ; il faut sortir d'un disque de
-117 à 137 px ; or en partant de l'arrêt, avec l'accélération du jeu, on
-parcourt **64 px** dans ce délai. Il manque au moins 53 px. Aucun algorithme
-ne comble ça.
+Une bombe qui vise le joueur est la menace décisive d'infernal. Avec son rayon
+d'origine de 132 px elle était inéchappable **pour tout le monde** : 295 ms de
+préavis, un disque de 117 à 137 px à quitter, et seulement 64 px parcourus
+depuis l'arrêt avec l'accélération du jeu.
 
 | | Préavis | À parcourir | Parcouru depuis l'arrêt |
 |---|---|---|---|
 | hard | 842 ms | 101–119 px | 208 px |
 | ultra | 579 ms | 108–127 px | 137 px |
-| infernal | 295 ms | 117–137 px | **64 px** |
+| infernal, rayon 132 | 295 ms | 117–137 px | **64 px** |
+| **infernal, rayon 50** | 295 ms | **47–62 px** | 64 px |
+
+Le rayon est donc réduit à **50 px**. Un réflexe instantané en sort ; un
+humain, qui met ~250 ms à réagir, n'a plus le temps de bouger. Mesuré : la
+survie du bot en infernal passe de 1,95 s à 3,96 s, et il valide pour la
+première fois le premier objectif.
+
+**Limite connue :** le préavis des bombes diminue avec l'intensité. Au
+plancher de 200 ms, même une bombe de 50 px redevient inéchappable (il manque
+1,5 px au mieux, en mouvement). Le rayon seul ne sépare donc machine et humain
+qu'en début de partie.
+
+### Plancher d'avertissement
+
+En infernal, **aucun danger n'apparaît avec moins de 200 ms de préavis**. Le
+plancher est appliqué à un seul endroit, dans le contexte du directeur
+(`warn()` et `warnAoe()`), par lequel passent tous les patterns. Vérifié en
+balayant chaque danger à chaque pas de simulation sur 45 s : plus de 24 000
+dangers, tous à 200 ms minimum.
+
+Trois fuites ont dû être bouchées pour que ce soit vrai : les répliques
+d'explosion, créées à l'intérieur de l'entité et non par le directeur, avaient
+un minimum codé en dur de 180 ms ; la floraison faisait naître ses projectiles
+autour du centre de l'arène sans aucun préavis ; et la spirale, née à au moins
+98 px, atteignait le joueur en ~199 ms à la vitesse d'infernal.
 
 Un oracle qui propage toutes les positions atteignables survit jusqu'à ~8,5 s
 en infernal — mais il est **clairvoyant** : il suppose qu'on se trouvait déjà
