@@ -754,12 +754,17 @@ button{-webkit-tap-highlight-color:transparent}
       minWarning: 0.20,     // aucun danger n'apparaît avec moins de 200 ms
                             // de préavis : toujours sous le temps de réaction
                             // humain (~250 ms), mais exploitable par un bot
+      minWarningAoe: 0.30,  // bombes : 300 ms. Sans ça, au plancher de 200 ms
+                            // une bombe visée de 50 px redevenait inéchappable
+                            // même pour une machine. À 300 ms elle en sort ;
+                            // un humain, qui réagit en ~250 ms, n'a plus que
+                            // 50 ms pour bouger, soit environ 3 px.
       name: 'INFERNAL',
       color: '#ff3b6b',
       sub: 'Non jouable à la main. Banc de test pour bot.',
       blurb: 'Visée prédictive sans erreur et préavis plafonnés à 200 ms — sous le temps de réaction humain, mais assez pour une machine. Conçu pour qu\'un humain non assisté ne passe pas, et pour qu\'un bot puisse progresser.',
       bullets: [
-        'Préavis plancher : 200 ms',
+        'Préavis plancher : 200 ms, 300 ms pour les bombes',
         'Télégraphe d\'explosion : 0,28 s',
         'Explosion qui persiste : 2,20 s',
         '8 à 14 boules par salve, rayon réduit à 50 px',
@@ -2607,14 +2612,19 @@ button{-webkit-tap-highlight-color:transparent}
     // avec moins de préavis que ça, quelle que soit l'intensité. Un seul
     // endroit décide, sinon la garantie se perd dans les quinze patterns.
     const floor = d.minWarning || 0;
+    // Les bombes peuvent avoir leur propre plancher, jamais plus bas que le
+    // plancher général. Ce sont les seules menaces qui VISENT le joueur avec
+    // un grand rayon : c'est leur préavis qui décide si l'on peut en sortir.
+    const floorAoe = Math.max(floor, d.minWarningAoe || 0);
 
     return {
       game: g, diff: d, player: g.player, arena: g.arena, I,
       teleMul, sonarMul,
       /** Préavis d'un projectile ou d'un faisceau, plancher compris. */
       warn: base => Math.max(floor, base * teleMul),
-      /** Préavis d'une zone d'effet, plancher compris. */
-      warnAoe: base => Math.max(floor, base * sonarMul),
+      /** Préavis d'une zone d'effet, plancher des bombes compris. Sert aussi
+          de plancher transmis aux répliques d'explosion. */
+      warnAoe: base => Math.max(floorAoe, base * sonarMul),
       aimError: d.id === 'infernal' ? 0 : U.lerp(0.22, 0.04, U.clamp(I / 5, 0, 1)),
       spd: base => base * d.speedMul * (1 + I * 0.045),
       cnt: base => Math.max(1, base * d.countMul * U.clamp(scale, 0.5, 2.6)),
