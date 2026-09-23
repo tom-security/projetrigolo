@@ -48,14 +48,19 @@
     // avec moins de préavis que ça, quelle que soit l'intensité. Un seul
     // endroit décide, sinon la garantie se perd dans les quinze patterns.
     const floor = d.minWarning || 0;
+    // Les bombes peuvent avoir leur propre plancher, jamais plus bas que le
+    // plancher général. Ce sont les seules menaces qui VISENT le joueur avec
+    // un grand rayon : c'est leur préavis qui décide si l'on peut en sortir.
+    const floorAoe = Math.max(floor, d.minWarningAoe || 0);
 
     return {
       game: g, diff: d, player: g.player, arena: g.arena, I,
       teleMul, sonarMul,
       /** Préavis d'un projectile ou d'un faisceau, plancher compris. */
       warn: base => Math.max(floor, base * teleMul),
-      /** Préavis d'une zone d'effet, plancher compris. */
-      warnAoe: base => Math.max(floor, base * sonarMul),
+      /** Préavis d'une zone d'effet, plancher des bombes compris. Sert aussi
+          de plancher transmis aux répliques d'explosion. */
+      warnAoe: base => Math.max(floorAoe, base * sonarMul),
       aimError: d.id === 'infernal' ? 0 : U.lerp(0.22, 0.04, U.clamp(I / 5, 0, 1)),
       spd: base => base * d.speedMul * (1 + I * 0.045),
       cnt: base => Math.max(1, base * d.countMul * U.clamp(scale, 0.5, 2.6)),

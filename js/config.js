@@ -238,12 +238,17 @@
       minWarning: 0.20,     // aucun danger n'apparaît avec moins de 200 ms
                             // de préavis : toujours sous le temps de réaction
                             // humain (~250 ms), mais exploitable par un bot
+      minWarningAoe: 0.30,  // bombes : 300 ms. Sans ça, au plancher de 200 ms
+                            // une bombe visée de 50 px redevenait inéchappable
+                            // même pour une machine. À 300 ms elle en sort ;
+                            // un humain, qui réagit en ~250 ms, n'a plus que
+                            // 50 ms pour bouger, soit environ 3 px.
       name: 'INFERNAL',
       color: '#ff3b6b',
       sub: 'Non jouable à la main. Banc de test pour bot.',
       blurb: 'Visée prédictive sans erreur et préavis plafonnés à 200 ms — sous le temps de réaction humain, mais assez pour une machine. Conçu pour qu\'un humain non assisté ne passe pas, et pour qu\'un bot puisse progresser.',
       bullets: [
-        'Préavis plancher : 200 ms',
+        'Préavis plancher : 200 ms, 300 ms pour les bombes',
         'Télégraphe d\'explosion : 0,28 s',
         'Explosion qui persiste : 2,20 s',
         '8 à 14 boules par salve, rayon réduit à 50 px',

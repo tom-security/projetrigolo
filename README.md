@@ -126,18 +126,23 @@ humain, qui met ~250 ms à réagir, n'a plus le temps de bouger. Mesuré : la
 survie du bot en infernal passe de 1,95 s à 3,96 s, et il valide pour la
 première fois le premier objectif.
 
-**Limite connue :** le préavis des bombes diminue avec l'intensité. Au
-plancher de 200 ms, même une bombe de 50 px redevient inéchappable (il manque
-1,5 px au mieux, en mouvement). Le rayon seul ne sépare donc machine et humain
-qu'en début de partie.
+Le rayon seul ne suffisait pas : le préavis des bombes diminue avec
+l'intensité, et au plancher général de 200 ms même une bombe de 50 px
+redevenait inéchappable (il manquait 1,5 px au mieux, en mouvement). Les
+bombes ont donc **leur propre plancher de 300 ms**. Simulé sur 24 directions
+de fuite, la bombe visée est désormais échappable dans tous les cas — début de
+partie ou intensité maximale, joueur à l'arrêt ou en mouvement, rayon nominal
+ou maximal. Un humain qui réagit en ~250 ms n'a plus que 50 ms pour bouger,
+soit environ 3 px : il reste pris.
 
 ### Plancher d'avertissement
 
-En infernal, **aucun danger n'apparaît avec moins de 200 ms de préavis**. Le
-plancher est appliqué à un seul endroit, dans le contexte du directeur
-(`warn()` et `warnAoe()`), par lequel passent tous les patterns. Vérifié en
-balayant chaque danger à chaque pas de simulation sur 45 s : plus de 24 000
-dangers, tous à 200 ms minimum.
+En infernal, **aucun danger n'apparaît avec moins de 200 ms de préavis, et
+aucune bombe avec moins de 300 ms**. Les deux planchers sont appliqués à un
+seul endroit, dans le contexte du directeur (`warn()` et `warnAoe()`), par
+lequel passent tous les patterns. Vérifié en balayant chaque danger à chaque
+pas de simulation sur 45 s : plus de 25 000 dangers, projectiles à 200 ms
+minimum, explosions et répliques à 300 ms minimum.
 
 Trois fuites ont dû être bouchées pour que ce soit vrai : les répliques
 d'explosion, créées à l'intérieur de l'entité et non par le directeur, avaient
