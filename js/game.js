@@ -182,6 +182,11 @@
   Game.prototype.update = function (rawDt) {
     const p = this.player;
 
+    // Le bot réfléchit AVANT l'image, sur un état complet : sa prévision
+    // (forecast.js) clone la partie, et un clone pris au milieu d'une image
+    // rejouerait deux fois la moitié déjà faite.
+    if (this.botActive && !this.__forecasting) root.Bot.think(this, rawDt);
+
     // Ralentissement (adrénaline) : sur le monde, pas sur le joueur.
     const worldScale = p.slowT > 0 ? CFG.PLAYER.adrenalinScale : 1;
     const dt = rawDt;                       // le joueur garde son temps plein
@@ -202,12 +207,7 @@
 
     // Le bot expose la même interface que le clavier : le joueur ne fait
     // aucune différence, et toute la logique de déplacement reste commune.
-    if (this.botActive) {
-      root.Bot.think(this, dt);
-      p.update(dt, root.Bot);
-    } else {
-      p.update(dt, root.Input);
-    }
+    p.update(dt, this.botActive ? root.Bot : root.Input);
 
     const collapse = this.arena.update(dt, p, this.elapsed);
     if (collapse) { this.die('Effondrement de la zone — rester dehors tue.'); return; }

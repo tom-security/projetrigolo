@@ -43,9 +43,9 @@
   Fx.prototype.burst = function (x, y, n, color, speed, size, life) {
     if (this.quality === 'low') n = Math.ceil(n * 0.4);
     for (let i = 0; i < n; i++) {
-      const a = U.rr(0, U.TAU), s = U.rr(speed * 0.25, speed);
+      const a = U.vrr(0, U.TAU), s = U.vrr(speed * 0.25, speed);
       this.spawn(x, y, Math.cos(a) * s, Math.sin(a) * s,
-        U.rr(life * 0.55, life), U.rr(size * 0.5, size), color, 2.4, true);
+        U.vrr(life * 0.55, life), U.vrr(size * 0.5, size), color, 2.4, true);
     }
   };
 
@@ -55,15 +55,15 @@
     for (let i = 0; i < n; i++) {
       const a = (i / n) * U.TAU;
       this.spawn(x + Math.cos(a) * radius, y + Math.sin(a) * radius,
-        Math.cos(a) * speed, Math.sin(a) * speed, U.rr(0.3, 0.55), U.rr(1.6, 3), color, 3.0, false);
+        Math.cos(a) * speed, Math.sin(a) * speed, U.vrr(0.3, 0.55), U.vrr(1.6, 3), color, 3.0, false);
     }
   };
 
   /** Traînée discrète (dash, projectiles rapides). */
   Fx.prototype.trail = function (x, y, color, size) {
     if (this.quality === 'low' && Math.random() < 0.5) return;
-    this.spawn(x + U.rr(-2, 2), y + U.rr(-2, 2), U.rr(-18, 18), U.rr(-18, 18),
-      U.rr(0.18, 0.34), size || 2.6, color, 4.5, false);
+    this.spawn(x + U.vrr(-2, 2), y + U.vrr(-2, 2), U.vrr(-18, 18), U.vrr(-18, 18),
+      U.vrr(0.18, 0.34), size || 2.6, color, 4.5, false);
   };
 
   Fx.prototype.text = function (x, y, str, color, size, rise) {
@@ -101,8 +101,8 @@
 
     if (this.shake > 0) {
       this.shake = Math.max(0, this.shake - dt * 46);
-      this.shakeX = U.rr(-this.shake, this.shake);
-      this.shakeY = U.rr(-this.shake, this.shake);
+      this.shakeX = U.vrr(-this.shake, this.shake);
+      this.shakeY = U.vrr(-this.shake, this.shake);
     } else { this.shakeX = this.shakeY = 0; }
 
     if (this.flash > 0) this.flash = Math.max(0, this.flash - dt * 2.6);

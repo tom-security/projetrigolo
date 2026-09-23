@@ -163,8 +163,8 @@
 
     this.game.stats.graze++;
     this.adrenalin = Math.min(1, this.adrenalin + 0.055);
-    this.game.fx.spawn(this.x + U.rr(-6, 6), this.y + U.rr(-6, 6),
-      U.rr(-40, 40), U.rr(-70, -20), 0.4, 2.2, '#4de3ff', 2, false);
+    this.game.fx.spawn(this.x + U.vrr(-6, 6), this.y + U.vrr(-6, 6),
+      U.vrr(-40, 40), U.vrr(-70, -20), 0.4, 2.2, '#4de3ff', 2, false);
     if (this.game.stats.graze % 10 === 0) this.game.audio.graze();
   };
 
