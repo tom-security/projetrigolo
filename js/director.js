@@ -41,10 +41,21 @@
   Director.prototype.ctx = function () {
     const g = this.game, d = this.diff, I = this.I;
     const scale = 0.55 + I * 0.28;
+    const sonar = g.player.has('sonar') ? 1.35 : 1;
+    const teleMul = d.telegraphMul * sonar / Math.max(0.6, 0.85 + I * 0.06);
+    const sonarMul = sonar * (1 / Math.max(0.7, 0.9 + I * 0.05));
+    // Plancher d'avertissement, en secondes. Aucun danger ne peut apparaître
+    // avec moins de préavis que ça, quelle que soit l'intensité. Un seul
+    // endroit décide, sinon la garantie se perd dans les quinze patterns.
+    const floor = d.minWarning || 0;
+
     return {
       game: g, diff: d, player: g.player, arena: g.arena, I,
-      teleMul: d.telegraphMul * (g.player.has('sonar') ? 1.35 : 1) / Math.max(0.6, 0.85 + I * 0.06),
-      sonarMul: (g.player.has('sonar') ? 1.35 : 1) * (1 / Math.max(0.7, 0.9 + I * 0.05)),
+      teleMul, sonarMul,
+      /** Préavis d'un projectile ou d'un faisceau, plancher compris. */
+      warn: base => Math.max(floor, base * teleMul),
+      /** Préavis d'une zone d'effet, plancher compris. */
+      warnAoe: base => Math.max(floor, base * sonarMul),
       aimError: d.id === 'infernal' ? 0 : U.lerp(0.22, 0.04, U.clamp(I / 5, 0, 1)),
       spd: base => base * d.speedMul * (1 + I * 0.045),
       cnt: base => Math.max(1, base * d.countMul * U.clamp(scale, 0.5, 2.6)),

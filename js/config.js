@@ -45,6 +45,7 @@
     /* ------------------------------------------------------------------ */
     {
       id: 'easy',
+      minWarning: 0,        // pas de plancher : leurs préavis sont déjà bien au-dessus
       name: 'EASY',
       color: '#4ade80',
       sub: 'Lecture pure. Peu de balles, gros télégraphes.',
@@ -94,6 +95,7 @@
     /* ------------------------------------------------------------------ */
     {
       id: 'medium',
+      minWarning: 0,        // pas de plancher : leurs préavis sont déjà bien au-dessus
       name: 'MEDIUM',
       color: '#4de3ff',
       sub: 'Superposition de patterns lisibles. Toujours zéro spam.',
@@ -139,6 +141,7 @@
     /* ------------------------------------------------------------------ */
     {
       id: 'hard',
+      minWarning: 0,        // pas de plancher : inchangé
       name: 'HARD',
       color: '#ffd166',
       sub: 'Skill + densité. Le spam commence.',
@@ -185,6 +188,7 @@
     /* ------------------------------------------------------------------ */
     {
       id: 'ultra',
+      minWarning: 0,        // pas de plancher : inchangé
       name: 'ULTRA HARD',
       color: '#ff8a3d',
       sub: 'Spam permanent. Le skill n\'est plus une option.',
@@ -231,16 +235,19 @@
     /* ------------------------------------------------------------------ */
     {
       id: 'infernal',
+      minWarning: 0.20,     // aucun danger n'apparaît avec moins de 200 ms
+                            // de préavis : toujours sous le temps de réaction
+                            // humain (~250 ms), mais exploitable par un bot
       name: 'INFERNAL',
       color: '#ff3b6b',
       sub: 'Non jouable à la main. Banc de test pour bot.',
-      blurb: 'Visée prédictive sans erreur, fenêtres de réaction sous 120 ms, dash sans invincibilité. Conçu pour qu\'un humain non assisté ne passe pas. Le record est là pour mesurer, pas pour gagner.',
+      blurb: 'Visée prédictive sans erreur et préavis plafonnés à 200 ms — sous le temps de réaction humain, mais assez pour une machine. Conçu pour qu\'un humain non assisté ne passe pas, et pour qu\'un bot puisse progresser.',
       bullets: [
-        'Réaction exigée < 120 ms',
+        'Préavis plancher : 200 ms',
         'Télégraphe d\'explosion : 0,28 s',
         'Explosion qui persiste : 2,20 s',
         '8 à 14 grosses boules par salve',
-        'Dash SANS invincibilité',
+        'Dash : 0,08 s d\'invincibilité seulement',
         'Sortie d\'arène : 0,25 s avant la mort'
       ],
       intensityRate: 0.30,
@@ -253,7 +260,7 @@
       tagWeights: { skill: 1.0, spam: 1.6, brutal: 1.9 },
       maxTier: 5,
       playerSpeed: 250,
-      dashIFrames: 0.0,          // aucune invincibilité
+      dashIFrames: 0.08,         // juste de quoi traverser un tir
       dashCooldown: 1.40,
       arenaRadius: 320,
       shrinkTo: 0.46,
@@ -262,10 +269,10 @@
       impossible: true,
       aoe: {
         count: [8, 14], telegraph: 0.28, linger: 2.20, radius: 132,
-        lingerGrowth: 0.32, secondary: 3
+        lingerGrowth: 0.32, secondary: 1
       },
       objectives: obj([
-        { t: 10,  type: 'survive', reward: 'dash',   label: 'Tenir 10 s' },
+        { t: 5,   type: 'survive', reward: 'dash',   label: 'Tenir 5 s' },
         { t: 20,  type: 'survive', reward: 'focus',  label: 'Tenir 20 s' },
         { t: 30,  type: 'survive', reward: 'dash2',  label: 'Tenir 30 s' },
         { t: 45,  type: 'challenge', cond: 'graze', target: 30, duration: 12, reward: 'adrenalin', label: 'Frôler 30 fois en 12 s' },

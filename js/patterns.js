@@ -71,7 +71,7 @@
       push(c, new E.Bullet({
         x: o.x + Math.cos(a) * HUB, y: o.y + Math.sin(a) * HUB,
         vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        r: 7, c: '#4de3ff', delay: 0.30 * c.teleMul, life: 8
+        r: 7, c: '#4de3ff', delay: c.warn(0.30), life: 8
       }));
     }
   }
@@ -89,7 +89,7 @@
           push(c, new E.Bullet({
             x: from.x, y: from.y,
             vx: Math.cos(a + k * spread) * sp, vy: Math.sin(a + k * spread) * sp,
-            r: 8, c: '#ffd166', delay: 0.16 * c.teleMul
+            r: 8, c: '#ffd166', delay: c.warn(0.16)
           }));
         }
       });
@@ -101,7 +101,7 @@
     const A = c.diff.aoe;
     const n = U.ri(A.count[0], A.count[1]) + Math.floor(c.I * 0.35);
     const linger = A.linger + A.lingerGrowth * c.I;       // persistance progressive
-    const tele = Math.max(0.12, A.telegraph * c.sonarMul);
+    const tele = c.warnAoe(A.telegraph);
     const p = c.player;
 
     for (let i = 0; i < n; i++) {
@@ -138,7 +138,7 @@
     const spin = U.lerp(0.35, 1.25, U.clamp(c.I / 5, 0, 1)) * dir;
     push(c, new E.Laser({
       x: from.x, y: from.y, a: toward - dir * 0.8,
-      w: 20, tele: 0.85 * c.teleMul, active: U.lerp(1.6, 2.6, U.clamp(c.I / 5, 0, 1)),
+      w: 20, tele: c.warn(0.85), active: U.lerp(1.6, 2.6, U.clamp(c.I / 5, 0, 1)),
       spin, c: '#ff4d7a'
     }));
   }
@@ -154,7 +154,7 @@
       // (et le défi « rester au centre » garde un sens).
       push(c, new E.Laser({
         x: c.arena.cx + Math.cos(a) * 58, y: c.arena.cy + Math.sin(a) * 58, a,
-        w: 16, tele: 1.0 * c.teleMul, active: 1.8, spin, c: '#ff4d7a'
+        w: 16, tele: c.warn(1.0), active: 1.8, spin, c: '#ff4d7a'
       }));
     }
   }
@@ -168,7 +168,7 @@
       x: start.x, y: start.y, a,
       speed: c.spd(160), half: c.arena.radius + 200,
       gap: U.rr(-c.arena.radius * 0.5, c.arena.radius * 0.5),
-      gapHalf, thick: 16, tele: 0.75 * c.teleMul,
+      gapHalf, thick: 16, tele: c.warn(0.75),
       life: (c.arena.radius * 2.4) / c.spd(160),
       drift: c.I > 2.5 ? U.rr(-70, 70) : 0
     }));
@@ -184,7 +184,7 @@
         x: from.x, y: from.y, a: a + Math.PI,
         speed: c.spd(150), turn: U.lerp(0.9, 2.4, U.clamp(c.I / 5, 0, 1)),
         r: 13, life: U.lerp(6, 11, U.clamp(c.I / 5, 0, 1)),
-        tele: 0.5 * c.teleMul, c: '#ff4d7a'
+        tele: c.warn(0.5), c: '#ff4d7a'
       }));
     }
   }
@@ -225,7 +225,7 @@
       push(c, new E.Bullet({
         x: from.x, y: from.y,
         vx: Math.cos(a + Math.PI) * sp, vy: Math.sin(a + Math.PI) * sp,
-        r: 6.5, c: '#4de3ff', curve, life: 9, delay: 0.25 * c.teleMul
+        r: 6.5, c: '#4de3ff', curve, life: 9, delay: c.warn(0.25)
       }));
     }
   }
@@ -245,7 +245,7 @@
           const sp = c.spd(U.rr(200, 320));
           push(c, new E.Bullet({
             x: from.x, y: from.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
-            r: 5.5, c: '#9aa6ff', delay: 0.12 * c.teleMul
+            r: 5.5, c: '#9aa6ff', delay: c.warn(0.12)
           }));
         }
       });
@@ -276,7 +276,7 @@
           const off = (i / (cols - 1) - 0.5) * span;
           push(c, new E.Bullet({
             x: org.x + tx * off, y: org.y + ty * off,
-            vx: nx * sp, vy: ny * sp, r: 6, c: '#b48cff', delay: 0.18 * c.teleMul
+            vx: nx * sp, vy: ny * sp, r: 6, c: '#b48cff', delay: c.warn(0.18)
           }));
         }
       });
@@ -293,7 +293,7 @@
       push(c, new E.Wall({
         x: start.x, y: start.y, a: dir,
         speed: c.spd(145), half: c.arena.radius + 200,
-        gap, gapHalf, thick: 16, tele: 0.7 * c.teleMul,
+        gap, gapHalf, thick: 16, tele: c.warn(0.7),
         life: (c.arena.radius * 2.2) / c.spd(145), c: '#a78bfa'
       }));
     }
@@ -306,7 +306,7 @@
     const a = U.rr(0, U.TAU);
     const nx = Math.cos(a), ny = Math.sin(a);
     const linger = A.linger + A.lingerGrowth * c.I;
-    const tele = Math.max(0.14, A.telegraph * 0.85 * c.sonarMul);
+    const tele = c.warnAoe(A.telegraph * 0.85);
     for (let i = 0; i < steps; i++) {
       c.sched(i * 0.16, () => {
         const t = (i / (steps - 1) - 0.5) * c.arena.radius * 1.9;
@@ -334,7 +334,7 @@
         const a = lead(c, from.x, from.y, sp, c.aimError);
         push(c, new E.Bullet({
           x: from.x, y: from.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-          r: 7, c: '#ff3b6b', delay: 0.07
+          r: 7, c: '#ff3b6b', delay: c.warn(0.07)
         }));
       });
     }
@@ -383,7 +383,7 @@
   function singularity(c) {
     const A = c.diff.aoe;
     const linger = (A.linger + A.lingerGrowth * c.I) * 1.3;
-    const tele = Math.max(0.16, A.telegraph * 1.2 * c.sonarMul);
+    const tele = c.warnAoe(A.telegraph * 1.2);
     const R = c.arena.radius;
     const rings = 3;
     for (let ring = 0; ring < rings; ring++) {
