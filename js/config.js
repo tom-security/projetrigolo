@@ -246,7 +246,7 @@
         'Préavis plancher : 200 ms',
         'Télégraphe d\'explosion : 0,28 s',
         'Explosion qui persiste : 2,20 s',
-        '8 à 14 grosses boules par salve',
+        '8 à 14 boules par salve, rayon réduit à 50 px',
         'Dash : 0,08 s d\'invincibilité seulement',
         'Sortie d\'arène : 0,25 s avant la mort'
       ],
@@ -268,7 +268,12 @@
       outOfBoundsGrace: 0.25,
       impossible: true,
       aoe: {
-        count: [8, 14], telegraph: 0.28, linger: 2.20, radius: 132,
+        // Rayon réduit à 50 px : c'est ce qui sépare la machine de l'humain.
+        // Avec 132 px, une bombe visée était inéchappable pour tout le monde
+        // (64 px parcourus en 295 ms pour 117 à 137 à couvrir). À 50 px, un
+        // réflexe instantané en sort ; un humain, qui met ~250 ms à réagir,
+        // n'a plus le temps de bouger.
+        count: [8, 14], telegraph: 0.28, linger: 2.20, radius: 50,
         lingerGrowth: 0.32, secondary: 1
       },
       objectives: obj([

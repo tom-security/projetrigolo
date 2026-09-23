@@ -762,7 +762,7 @@ button{-webkit-tap-highlight-color:transparent}
         'Préavis plancher : 200 ms',
         'Télégraphe d\'explosion : 0,28 s',
         'Explosion qui persiste : 2,20 s',
-        '8 à 14 grosses boules par salve',
+        '8 à 14 boules par salve, rayon réduit à 50 px',
         'Dash : 0,08 s d\'invincibilité seulement',
         'Sortie d\'arène : 0,25 s avant la mort'
       ],
@@ -784,7 +784,12 @@ button{-webkit-tap-highlight-color:transparent}
       outOfBoundsGrace: 0.25,
       impossible: true,
       aoe: {
-        count: [8, 14], telegraph: 0.28, linger: 2.20, radius: 132,
+        // Rayon réduit à 50 px : c'est ce qui sépare la machine de l'humain.
+        // Avec 132 px, une bombe visée était inéchappable pour tout le monde
+        // (64 px parcourus en 295 ms pour 117 à 137 à couvrir). À 50 px, un
+        // réflexe instantané en sort ; un humain, qui met ~250 ms à réagir,
+        // n'a plus le temps de bouger.
+        count: [8, 14], telegraph: 0.28, linger: 2.20, radius: 50,
         lingerGrowth: 0.32, secondary: 1
       },
       objectives: obj([
@@ -1822,6 +1827,9 @@ button{-webkit-tap-highlight-color:transparent}
     this.state = 'tele';
     this.t = 0;
     this.grow = o.grow || 0;            // le rayon peut enfler pendant l'explosion
+    // Plancher d'avertissement de la difficulté, transmis aux répliques : elles
+    // naissent ici, hors du directeur, et échappaient sinon au plancher.
+    this.floor = o.floor || 0;
   }
 
   Blast.prototype.update = function (dt, game) {
@@ -1848,9 +1856,12 @@ button{-webkit-tap-highlight-color:transparent}
             x: this.x + Math.cos(a) * d,
             y: this.y + Math.sin(a) * d,
             r: this.r * 0.62,
-            tele: Math.max(0.18, this.teleMax * 0.55),
+            // Le minimum de 180 ms passait sous le plancher de 200 ms
+            // d'infernal ; le plancher de la difficulté prime désormais.
+            tele: Math.max(0.18, this.floor, this.teleMax * 0.55),
             linger: this.lingerMax * 0.6,
             secondary: 0,
+            floor: this.floor,
             c: '#ff5a3d'
           }));
         }
@@ -2221,6 +2232,7 @@ button{-webkit-tap-highlight-color:transparent}
           y = c.arena.cy + Math.sin(a) * d;
         }
         push(c, new E.Blast({
+          floor: c.warnAoe(0),
           x, y, r: A.radius * U.rr(0.85, 1.15),
           tele, linger, secondary: A.secondary,
           c: '#ff8a3d', grow: c.diff.id === 'infernal' ? 22 : 0
@@ -2310,7 +2322,11 @@ button{-webkit-tap-highlight-color:transparent}
           push(c, new E.Bullet({
             x: o.x + Math.cos(a) * HUB, y: o.y + Math.sin(a) * HUB,
             vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-            r: 6.5, c: '#7b8cff', life: 8
+            r: 6.5, c: '#7b8cff', life: 8,
+            // Née à ≥ 98 px du joueur, mais à la vitesse d'infernal le contact
+            // tombait à ~199 ms, juste sous le plancher. warn(0) le garantit,
+            // et reste nul hors infernal.
+            delay: c.warn(0)
           }));
         }
       });
@@ -2414,6 +2430,7 @@ button{-webkit-tap-highlight-color:transparent}
       c.sched(i * 0.16, () => {
         const t = (i / (steps - 1) - 0.5) * c.arena.radius * 1.9;
         push(c, new E.Blast({
+          floor: c.warnAoe(0),
           x: c.arena.cx + nx * t + U.rr(-40, 40),
           y: c.arena.cy + ny * t + U.rr(-40, 40),
           r: A.radius * 0.8, tele, linger: linger * 0.75,
@@ -2457,7 +2474,11 @@ button{-webkit-tap-highlight-color:transparent}
             x: c.arena.cx + Math.cos(a) * HUB, y: c.arena.cy + Math.sin(a) * HUB,
             vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
             r: 6, c: L % 2 ? '#ff3b6b' : '#4de3ff',
-            curve: (L % 2 ? 1 : -1) * 0.55, life: 9
+            curve: (L % 2 ? 1 : -1) * 0.55, life: 9,
+            // Ils naissent autour du centre, pas loin du joueur : sans préavis
+            // ils pouvaient apparaître sur lui. warn(0) applique le plancher
+            // de la difficulté, et reste nul ailleurs qu'en infernal.
+            delay: c.warn(0)
           }));
         }
       });
@@ -2497,6 +2518,7 @@ button{-webkit-tap-highlight-color:transparent}
         const a = off + (i / n) * U.TAU;
         c.sched(ring * 0.12, () => {
           push(c, new E.Blast({
+          floor: c.warnAoe(0),
             x: c.arena.cx + Math.cos(a) * rad,
             y: c.arena.cy + Math.sin(a) * rad,
             r: A.radius * 0.75, tele, linger,
